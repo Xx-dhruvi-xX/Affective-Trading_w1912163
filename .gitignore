@@ -1,7 +1,7 @@
 # Python
 __pycache__/
-*.__pyc
-.venv/
+*.pyc
+**/.venv/
 .env
 
 # Node 
