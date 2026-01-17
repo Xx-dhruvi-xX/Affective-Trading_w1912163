@@ -11,3 +11,7 @@ dist/
 
 #os 
 .DS_Store
+
+# Editor(default folder)
+.lsp/
+.clj-kondo/
