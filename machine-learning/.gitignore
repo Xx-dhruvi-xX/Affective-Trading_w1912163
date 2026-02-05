@@ -1,0 +1,7 @@
+
+# datasets + trained models (do not commit) 
+/data/raw/
+/data/processed/
+/models/tfjs/
+*.tar.gz
+
