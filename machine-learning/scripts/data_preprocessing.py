@@ -1,22 +1,42 @@
+"""
+Affective Trading (Final Year Project)
+Student Name: Dhruvi Soni
+Student ID: W1912163/3
+Supervisor: Dr. Alan Immanuel Benjamin Vallavaraj
+Module: 6COSC023W Computer Science Final Project
+
+Description:
+- Preprocess FER2013 images + FERPlus vote labels
+- Outputs train/val/test arrays in a compressed NPZ file
+- Saves metadata + label names for later model training
+"""
+
+
+
 from __future__ import annotations
 from pathlib import Path
 import numpy as np
 import pandas as pd
 import json
 
+# Project folders
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
 PROCESSED = ROOT / "data" / "processed"
 PROCESSED.mkdir(parents=True, exist_ok=True)
 
+#Dataset location
 FER2013_DIR = RAW / "fer2013"
 FERPLUS_DIR = RAW / "ferplus" / "FERPlus-master"
 
+#output files
 OUT_NPZ = PROCESSED / "fer_processed.npz"
 OUT_META = PROCESSED / "labels.json"
 
+#FER images are 48 x 48 grayscale
 IMG_H, IMG_W = 48, 48
 
+#FERPlus label names
 Emotions = [
     "neutral",
     "happiness",
@@ -36,11 +56,13 @@ def _cols_lower(df: pd.DataFrame) -> dict[str,str]:
     return {c.strip().lower(): c for c in df.columns}
 
 def _require_col(cols_map: dict [str,str], name: str) -> str:
+    #check if required column exists
     if name not in cols_map:
         raise ValueError(f"Expected column '{name}' not found. Available: {list(cols_map.values())}")
     return cols_map[name]
 
 def load_fer2013_pixels() -> tuple[pd.DataFrame,str]:
+    # Load dataset
     candidates = [
         FER2013_DIR / "icml_face_data.csv",
         FER2013_DIR / "fer2013.csv",
@@ -52,6 +74,7 @@ def load_fer2013_pixels() -> tuple[pd.DataFrame,str]:
     df.columns = [c.strip() for c in df.columns]
     return df, str(src)
 
+# Load FerPlus vote file with per-emotion vote counts
 def load_ferplus_votes() -> tuple[pd.DataFrame,str]:
     src = FERPLUS_DIR / "fer2013new.csv"
     if not src.exists():
@@ -60,6 +83,7 @@ def load_ferplus_votes() -> tuple[pd.DataFrame,str]:
     df.columns = [c.strip() for c in df.columns]
     return df, str(src)
 
+#convert pixel strings into numpy arrays
 def pixels_to_X(pixels: pd.Series) -> np.ndarray:
     arr = pixels.astype(str).str.strip().apply(lambda s: np.fromstring(s, sep=" ", dtype=np.float32))
     X = np.stack(arr.values)
@@ -91,6 +115,7 @@ def build_targets(df: pd.DataFrame) -> tuple[np.ndarray,str,np.ndarray]:
 
 def split_indices(usage: pd.Series) -> tuple[np.ndarray,np.ndarray,np.ndarray]:
     u = usage.astype(str).str.lower()
+    # split indicies into train/val/test based on FER usage field
     train_idx = np.where(u.str.contains("train"))[0]
     val_idx = np.where(u.str.contains("public"))[0]
     test_idx = np.where(u.str.contains("private"))[0]
@@ -107,9 +132,10 @@ def split_indices(usage: pd.Series) -> tuple[np.ndarray,np.ndarray,np.ndarray]:
     return train_idx, val_idx, test_idx
 
 def main() -> None:
+    #load both datasets
     fer_df,fer_src = load_fer2013_pixels()
     ferplus_df,ferplus_src = load_ferplus_votes()
-
+    # identify required columns
     fer_cols = _cols_lower(fer_df)
     pixels_col = _require_col(fer_cols, "pixels")
     usage_col = _require_col(fer_cols, "usage")
@@ -125,6 +151,7 @@ def main() -> None:
     vote_cols_actual = [ferplus_cols[c] for c in Emotions + ["unknown", "nf"]]
     votes = ferplus_df[vote_cols_actual].copy()
     votes.columns = Emotions + ["unknown", "nf"]
+    #Standardise column names
     combined = pd.concat([combined.reset_index(drop=True), votes.reset_index(drop=True)], axis=1)
     combined = combined.rename(columns={pixels_col: "pixels", usage_col: "usage"})
     X_all = pixels_to_X(combined["pixels"])
@@ -136,6 +163,7 @@ def main() -> None:
     X_train, X_val, X_test = X_kept[tain_idx], X_kept[val_idx], X_kept[test_idx]
     y_train, y_val, y_test = y_all[tain_idx], y_all[val_idx], y_all[test_idx]
 
+    # saave arrays
     np.savez_compressed(
         OUT_NPZ,
         X_train=X_train,
@@ -146,6 +174,7 @@ def main() -> None:
         y_test=y_test,
         y_type=np.array([y_type], dtype=object),
     )
+    # save metadata for reference
     meta = {
         "fer2013_source_csv": fer_src,
         "ferplus_source_csv": ferplus_src,

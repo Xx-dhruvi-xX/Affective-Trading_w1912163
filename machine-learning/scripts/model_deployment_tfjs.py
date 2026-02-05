@@ -1,3 +1,18 @@
+"""Affective Trading (Final Year Project)
+Student Name: Dhruvi Soni
+Student ID: W1912163/3
+Supervisor: Dr. Alan Immanuel Benjamin Vallavaraj  
+Module: 6COSC023W Computer Science Final Project
+Description:
+    - Converts the trained Keras CNN model into TensorFlow.js format
+    - Output is saved into the frontend public folder so it can be loaded by the browser later
+
+    Notes:
+        - Uses tensorflowjs_converter CLI instead of importing tensorflowjs in Python
+"""
+
+
+
 from __future__ import annotations
 from pathlib import Path
 import argparse
@@ -22,10 +37,6 @@ def resolve_default_paths() -> tuple[Path, Path, Path]:
     return model_path, labels_path, out_dir
 
 def export_with_cli(model_path: Path, out_dir: Path) -> None:
-    """
-    Uses tensorflowjs_converter CLI to export a Keras model to TFJS layers model.
-    This avoids importing tensorflowjs inside Python (which triggers tensorflow_hub).
-    """
     if not model_path.exists():
         raise FileNotFoundError(f"Model not found: {model_path}")
 
@@ -39,6 +50,7 @@ def export_with_cli(model_path: Path, out_dir: Path) -> None:
     print(f"[INFO] Saving temporary H5: {h5_path}")
     model.save(h5_path)
 
+    #CLI command
     cmd = [
         "tensorflowjs_converter",
         "--input_format=keras",
@@ -48,19 +60,19 @@ def export_with_cli(model_path: Path, out_dir: Path) -> None:
     ]
     print("[INFO] Running:", " ".join(cmd))
     subprocess.check_call(cmd)
-
-    # Remove the temporary .h5 so you don't upload it
+    # remove temporary file
     try:
         h5_path.unlink()
     except Exception:
         pass
-
+    # check to validate whether export succeeded 
     model_json = out_dir / "model.json"
     if not model_json.exists():
         raise RuntimeError("Export finished but model.json was not created.")
     print(f"[OK] TFJS export complete: {model_json}")
 
 def export_labels(labels_path: Path, out_dir: Path) -> None:
+    # copy label names into same folder as TFJS model output
     if not labels_path.exists():
         print(f"[WARN] Labels file not found (skipping labels export): {labels_path}")
         return
@@ -73,6 +85,7 @@ def export_labels(labels_path: Path, out_dir: Path) -> None:
     print(f"[OK] Labels exported: {out_labels}")
 
 def main() -> int:
+    # main entry point: read arguments/use defaults + export model and labels
     default_model,default_labels,default_out = resolve_default_paths()
     parser = argparse.ArgumentParser(
         description="Generate browser-deployable TensorFlow.js artifacts from a trained Keras CNN model"
@@ -90,5 +103,6 @@ def main() -> int:
     print("\n[INFO] Frontend load paths(later):")
     print("  Model: /tfjs/emotion_cnn/model.json")
     print("  Labels: /tfjs/emotion_cnn/label_names.json")
+    return 0
 if __name__ == "__main__":
     raise SystemExit(main())
