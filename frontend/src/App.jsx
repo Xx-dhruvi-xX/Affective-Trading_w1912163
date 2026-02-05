@@ -10,30 +10,13 @@
 */
 
 import {useEffect, useState} from 'react';
-
+import EmotionRecognitionPanel  from './EmotionRecognitionPanel';
+import FacialLandmarkDetection from './FacialLandmarkDetection'
 export default function App() {
-  const [apiStatus, setApiStatus] = useState("Checking API...");
-  const [error, setError] = useState("");
-  useEffect(() => {
-    async function checkHealth() {
-      try {
-        const res = await fetch("http://127.0.0.1:5000/health");
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setApiStatus(`API OK: ${data.status}`);
-      } catch (err) {
-        setApiStatus("API Not Reachable");
-        setError(String(err));
-      }
-    }
-    checkHealth();
-  }, []);
   return (
     <div style = {{fontFamily: "system-ui", padding:"24"}}>
       <h1>Affective Trading Frontend</h1>
-      <p>{apiStatus}</p>
-      {error && <p style={{color: 'red'}}>Error: {error}</p>}
-      <p> Backend Health: http://127.0.0.1:5000/health </p>
+      <FacialLandmarkDetection/>
     </div>
-  ); 
+  )
 }

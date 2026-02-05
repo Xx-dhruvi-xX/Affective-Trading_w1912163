@@ -71,6 +71,13 @@ class StressSample(db.Model):
     emotion_label = db.Column(db.String(30), nullable=True) #optional emotion label
     timestamp = db.Column(db.DateTime, server_default = db.func.now(), nullable=False)
 
+class Portfolio(db.Model):
+    __tablename__ = "portfolios"
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"), nullable=False, unique=True)
+    cash_balance = db.Column(db.Float, nullable=False, default=100000.0) #default starting cash
+    holdings = db.Column(db.JSON, nullable=False, default= lambda: {}) #JSON mapping of symbol
+    session = db.relationship("Session", backref=db.backref("portfolio", uselist=False),lazy=True)
 # App Health Check Endpoint
 
 @app.get("/health")
