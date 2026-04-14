@@ -1,0 +1,460 @@
+.sim{
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: 'Space Mono', monospace;
+  animation: fadeIn 0.5s ease;
+}
+.sim_topbar{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  height: 50px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #1a1a30;
+  background-color: #07070e;
+}
+.sim_topbar-left{
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.sim_label{
+  font-size: 9px;
+  letter-spacing: 0.45em;
+  color: #42425a;
+  text-transform: uppercase;
+}
+.sim_session-tag{
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: rgba(44, 184, 160, 0.6);
+}
+.sim_backend-dot{
+  font-size: 8px;
+  letter-spacing: 0.15em;
+}
+.sim_backend-dot--ok{
+  color: #2db8a0;
+}
+.sim_backend-dot--error{
+  color: #f87171;
+}
+.sim_topbar-right{
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.sim_portfolio-summary{
+  font-size: 12px;
+  color: #7878a0;
+}
+.sim_portfolio-value{
+  font-weight: 700;
+  font-size: 14px;
+}
+.sim_portfolio-value--gain{
+  color: #4ade80;
+}
+.sim_portfolio-value--loss{
+  color: #f87171;
+}
+.sim_pnl{
+  font-size: 10px;
+  margin-left: 8px;
+}
+.sim_pnl--gain{
+  color: #4ade80;
+}
+.sim_pnl--loss{
+  color: #f87171;
+}
+.sim_end-btn{
+  padding: 7px 18px;
+  background: transparent;
+  border: 1px solid rgba(124, 92, 252, 0.4);
+  border-radius: 6px;
+  color: rgba(244, 244, 248, 0.6);
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.sim_end-btn:hover{
+  background: rgba(124, 92, 252, 0.14);
+  border-color: rgba(124, 92, 252, 0.85);
+  color: #f4f4f8;
+}
+.sim_body{
+  display: grid;
+  grid-template-columns: 210px 1fr 260px;
+  flex: 1;
+  overflow: hidden;
+}
+.sim_col{
+  border-right: 1px solid #1a1a30;
+  overflow-y: auto;
+  padding: 20px 0;
+}
+.sim_col-heading{
+  padding: 0 16px 12px;
+  font-size: 8px;
+  letter-spacing: 0.5em;
+  color: #42425a;
+  text-transform: uppercase;
+}
+.sim_price-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 11px 16px;
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  border-bottom: 1px solid rgba(26, 26, 48, 0.5);
+  color: #f4f4f8;
+  text-align: left;
+  transition: background 0.15s, border-left-color 0.15s;
+  cursor: pointer;
+}
+.sim_price-row:hover{
+  background: rgba(74, 63, 160, 0.08);
+}
+.sim_price-row--active{
+  border-left-color: #7c5cfc;
+  background: rgba(74, 63, 160, 0.14);
+}
+.sim_price-symbol{
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.sim_price-row--active .sim_price-symbol{
+  color: #7c5cfc;
+}
+.sim_price-name{
+  font-size: 9px;
+  color: #42425a;
+  margin-top: 3px;
+}
+.sim_price-value{
+  font-size: 13px;
+  font-weight: 700;
+}
+.sim_price-value--gain{
+  color: #4ade80;
+}
+.sim_price-value--loss{
+  color: #f87171;
+}
+.sim_price-change{
+  font-size: 9px;
+  margin-top: 2px;
+  text-align: right;
+}
+.sim_price-change--gain{
+  color: #4ade80;
+}
+.sim_price-change--loss{
+  color: #f87171;
+}
+.sim_price-note{
+  padding: 12px 16px 0;
+  font-size: 8px;
+  color: rgba(66, 66, 90, 0.5);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+.sim_trade-col{
+  padding: 24px;
+  overflow-y: auto;
+}
+.sim_selected-header{
+  margin-bottom: 24px;
+}
+.sim_selected-symbol{
+  font-family: 'CORMORANT GARALMOND', serif;
+  font-weight: 300;
+  font-size: 38px;
+  letter-spacing: 0.1em;
+  color: #7c5cfc;
+}
+.sim_selected-name{
+  font-size: 10px;
+  color: #7878a0;
+  margin-left: 14px;
+}
+.sim_selected-price{
+  font-size: 26px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.sim_selected-price--gain{
+  color: #4ade80;
+}
+.sim_selected-price--loss{
+  color: #f87171;
+}
+.sim_side-toggle{
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.sim_side-btn{
+  flex: 1;
+  padding: 10px 0;
+  background: #111128;
+  border: 1px solid #1a1a30;
+  border-radius: 10px;
+  color: #42425a;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  transition: all 0.2s;
+}
+.sim_side-btn--buy-active{
+  background: rgba(44, 184, 160, 0.12);
+  border-color: #2db8a0;
+  color: #2db8a0;
+  font-weight: 700;
+}
+.sim_side-btn--sell-active{
+  background: rgba(248, 113, 113, 0.12);
+  border-color: #f87171;
+  color: #f87171;
+  font-weight: 700;
+}
+.sim_field-label{
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.45em;
+  color: #42425a;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+  margin-top: 16px;
+}
+.sim_input{
+  width: 100%;
+  padding: 10px 14px;
+  background: #111128;
+  border: 1px solid #1a1a30;
+  border-radius: 10px;
+  color: #f4f4f8;
+  font-family: 'Space Mono', monospace;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.sim_input:focus{
+  border-color: rgba(124, 92, 252, 0.6);
+}
+.sim_cost-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px 0;
+  border-bottom: 1px solid #1a1a30;
+  margin-top: 6px;
+}
+.sim_cost-label{
+  font-size: 10px;
+  color: #7878a0;
+  letter-spacing: 0.15em;
+}
+.sim_cost-value{
+  font-size: 16px;
+  font-weight: 700;
+}
+.sim_cost-value--buy{
+  color: #c4a87a;
+}
+.sim_cost-value--sell{
+  color: #2db8a0;
+}
+.sim_submit{
+  width: 100%;
+  padding: 13px 0;
+  margin-top: 16px;
+  border: 1px solid;
+  border-radius: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-weight: 700;
+  transition: opacity 0.2s;
+}
+.sim_submit:hover{
+  opacity: 0.82;
+}
+.sim_submit--buy{
+  background: rgba(44, 184, 160, 0.1);
+  border-color: #2db8a0;
+  color: #2db8a0;
+}
+.sim_submit--sell{
+  background: rgba(248, 113, 113, 0.1);
+  border-color: #f87171;
+  color: #f87171;
+}
+.sim_msg{
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+.sim_msg--ok{
+  background: rgba(44, 184, 160, 0.08);
+  border-color: rgba(44, 184, 160, 0.45);
+  color: #2db8a0;
+}
+.sim_msg--error{
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #f87171;
+}
+.sim_history{
+  margin-top: 32px;
+}
+.sim_history-empty{
+  font-size: 10px;
+  color: #252545;
+  text-align: center;
+  padding: 20px 0;
+  letter-spacing: 0.2em;
+}
+.sim_history-list{
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+.sim_history-row{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #111128;
+  border-radius: 10px;
+  font-size: 10px;
+}
+.sim_history-badge{
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+}
+.sim_history-badge--buy{
+  background: rgba(44, 184, 160, 0.15);
+  color: #2db8a0;
+}
+.sim_history-badge--sell{
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+.sim_history-symbol{
+  font-weight: 700;
+  min-width: 44px;
+}
+.sim_history-detail{
+  color: #7878a0;
+}
+.sim_history-time{
+  font-size: 9px;
+  color: #42425a;
+  margin-left: auto;
+}
+.sim_port-stat{
+  background: #0d0d1c;
+  border: 1px solid #1a1a30;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.sim_port-stat-label{
+  font-size: 8px;
+  letter-spacing: 0.35em;
+  color: #42425a;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.sim_port-stat-value{
+  font-size: 18px;
+  font-weight: 700;
+}
+.sim_port-stat-value--cash{
+  color: #7c5cfc;
+}
+.sim_port-stat-value--holdings{
+  color: #c4a87a;
+}
+.sim_port-total{
+  background: linear-gradient(135deg,rgba(74, 63, 160, 0.12), rgba(44, 184, 160, 0.06));
+  border: 1px solid #1a1a30;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.sim_port-total-value{
+  font-size: 22px;
+  font-weight: 700;
+}
+.sim_port-total-value--gain{
+  color: #4ade80;
+}
+.sim_port-total-value--loss{
+  color: #f87171;
+}
+.sim_port-total-pnl{
+  font-size: 10px;
+  margin-top: 5px;
+}
+.sim_port-total-pnl--gain{
+  color: #4ade80;
+}
+.sim_port-total-pnl--loss{
+  color: #f87171;
+}
+.sim_holdings-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #1a1a30;
+}
+.sim_holdings-symbol{
+  font-size: 12px;
+  font-weight: 700;
+}
+.sim_holdings-qty{
+  font-size: 9px;
+  color: #42425a;
+  margin-top: 2px;
+}
+.sim_holdings-value{
+  font-size: 13px;
+  font-weight: 700;
+  color: #c4a87a;
+  text-align: right;
+}
+.sim_holdings-price{
+  font-size: 9px;
+  color: #7878a0;
+  margin-top: 2px;
+  text-align: right;
+}
+.sim_holdings-empty{
+  font-size: 10px;
+  color: #252545;
+  text-align: center;
+  padding: 14px 0;
+  letter-spacing: 0.2em;
+}

@@ -41,6 +41,9 @@ if not app.config["SQLALCHEMY_DATABASE_URI"]:
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 
+STARTING_CASH_BALANCE = 100000.0
+
+
 #Database models
 
 class Session(db.Model):
@@ -75,9 +78,29 @@ class Portfolio(db.Model):
     __tablename__ = "portfolios"
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"), nullable=False, unique=True)
-    cash_balance = db.Column(db.Float, nullable=False, default=100000.0) #default starting cash
-    holdings = db.Column(db.JSON, nullable=False, default= lambda: {}) #JSON mapping of symbol
+    cash_balance = db.Column(db.Float, nullable=False, default=STARTING_CASH_BALANCE) #default starting cash
+    holdings = db.Column(db.JSON, nullable=False, default=dict) #JSON mapping of symbol
     session = db.relationship("Session", backref=db.backref("portfolio", uselist=False),lazy=True)
+
+# Helper function to get or create portfolio for a session
+
+def get_or_create_portfolio(session_id: int) -> Portfolio:
+    portfolio = Portfolio.query.filter_by(session_id=session_id).first()
+    if portfolio is None:
+        portfolio = Portfolio(session_id=session_id, cash_balance=STARTING_CASH_BALANCE, holdings={})
+        db.session.add(portfolio)
+        db.session.commit()
+    return portfolio
+
+def calculate_holdings_value(holdings: dict[str,int], latest_prices: dict[str,float] | None = None) -> float:
+    """Calculate total value of holdings. If latest_prices provided, use them; otherwise assume price=0."""
+    if not latest_prices:
+        return 0.0
+    total = 0.0
+    for symbol, qty in holdings.items():
+        total += float(qty)*float(latest_prices.get(symbol, 0.0))
+    return total
+
 # App Health Check Endpoint
 
 @app.get("/health")
@@ -93,48 +116,115 @@ def db_test():
     except Exception as e:
         return jsonify(db_status="error", message=str(e)), 500
 
+# Session Endpoints
+
 @app.post("/sessions")
 def start_session():
     payload = request.get_json(silent=True) or {}
-    s = Session(user_settings= payload if payload else None)
-    db.session.add(s)
+    session = Session(user_settings= payload if payload else None)
+    db.session.add(session)
     db.session.commit()
-    return jsonify({"session_id": s.id, "started_at": s.started_at.isoformat()}), 201
+
+    # Create initial portfolio for the session
+    portfolio = Portfolio(session_id=session.id, cash_balance=STARTING_CASH_BALANCE, holdings={})
+    db.session.add(portfolio)
+    db.session.commit()
+
+    return jsonify({"session_id": session.id, "started_at": session.started_at.isoformat(), "starting_cash": STARTING_CASH_BALANCE}), 201
 
 @app.post("/sessions/<int:session_id>/end")
 def end_session(session_id):
-    s = Session.query.get_or_404(session_id)
-    s.ended_at = db.func.now()
+    session = Session.query.get_or_404(session_id)
+    session.ended_at = db.func.now()
     db.session.commit()
-    return jsonify({"session_id": s.id, "ended_at": str(s.ended_at)}), 200
+    return jsonify({"session_id": session.id, "ended_at": str(session.ended_at)}), 200
+
+@app.get("/sessions/<int:session_id>/summary")
+def session_summary(session_id):
+    Session.query.get_or_404(session_id)
+    portfolio = get_or_create_portfolio(session_id)
+    trade_count = Trade.query.filter_by(session_id=session_id).count()
+    stress_count = StressSample.query.filter_by(session_id=session_id).count()
+    avg_stress = db.session.query(db.func.avg(StressSample.stress_score)).filter_by(session_id=session_id).scalar()
+    peak_stress = db.session.query(db.func.max(StressSample.stress_score)).filter_by(session_id=session_id).scalar()
+    avg_stress = float(avg_stress) if avg_stress is not None else None
+    peak_stress = float(peak_stress) if peak_stress is not None else None
+    cash_balance = float(portfolio.cash_balance)
+    holdings = portfolio.holdings or {}
+    final_portfolio_value = cash_balance
+
+    return jsonify({
+        "session_id": session_id,
+        "trade_count": trade_count,
+        "stress_sample_count": stress_count,
+        "average_stress_score": avg_stress,
+        "peak_stress_score": peak_stress,
+        "cash_balance": cash_balance,
+        "holdings": holdings,
+        "final_portfolio_value": final_portfolio_value
+    }), 200
+
+# Trade Endpoints
 
 @app.post("/sessions/<int:session_id>/trades")
 def add_trade(session_id):
     Session.query.get_or_404(session_id)
+    portfolio = get_or_create_portfolio(session_id)
     data = request.get_json() or {}
-    # Basic validation
     required = ["symbol", "side", "quantity", "price"]
     missing = [field for field in required if field not in data]
     if missing:
-        return jsonify(error = f"Missing fields: {', '.join(missing)}"), 400
+        return jsonify(error=f"Missing fields: {', '.join(missing)}"), 400
+    symbol = str(data["symbol"]).upper()
     side = str(data["side"]).upper()
-    if side not in ["BUY", "SELL"]:
-        return jsonify(error="Invalid side. Must be 'BUY' or 'SELL'."), 400
     quantity = int(data["quantity"])
     price = float(data["price"])
-    if quantity <= 0 or price <= 0:
-        return jsonify(error="Quantity and price must be > 0"), 400
+
+    if side not in {"BUY", "SELL"}:
+        return jsonify(error="Invalid side: must be 'BUY' or 'SELL'"), 400
     
-    t = Trade(
-        session_id=session_id,
-        symbol= str(data["symbol"]).upper(),
-        side=side,
-        quantity=quantity,
-        price=price
-    )
-    db.session.add(t)
+    if quantity <= 0 or price <= 0:
+        return jsonify(error="Quantity and price must be greater than zero"), 400
+    
+    holdings = dict(portfolio.holdings or {})
+    current_cash = float(portfolio.cash_balance)
+    current_qty = int(holdings.get(symbol, 0))
+    total_cost = quantity * price
+
+    if side == "BUY":
+        if total_cost > current_cash:
+            return jsonify(error="Insufficient cash balance for this trade"), 400
+        portfolio.cash_balance = round(current_cash - total_cost, 2)
+        holdings[symbol] = current_qty + quantity
+    elif side == "SELL":
+        if quantity > current_qty:
+            return jsonify(error = f"Cannot sell {quantity} shares of {symbol} - only {current_qty} available"), 400
+        portfolio.cash_balance = round(current_cash + total_cost, 2)
+        remaining = current_qty - quantity
+        if remaining > 0:
+            holdings[symbol] = remaining
+        else:
+            holdings.pop(symbol, None)
+    portfolio.holdings = holdings
+    trade = Trade(session_id=session_id, symbol=symbol, side=side, quantity=quantity, price=price)
+    db.session.add(trade)
     db.session.commit()
-    return jsonify({"trade_id": t.id}), 201
+    return jsonify({"trade_id": trade.id, "new_cash_balance": portfolio.cash_balance, "holdings": portfolio.holdings}), 201
+
+@app.get("/sessions/<int:session_id>/trades")
+def get_trades(session_id):
+    Session.query.get_or_404(session_id)
+    trades = Trade.query.filter_by(session_id=session_id).order_by(Trade.timestamp).all()
+    return jsonify([{
+        "trade_id": t.id,
+        "symbol": t.symbol,
+        "side": t.side,
+        "quantity": t.quantity,
+        "price": t.price,
+        "timestamp": t.timestamp.isoformat()
+    } for t in trades]), 200
+
+# Stress Sample Endpoints
 
 @app.post("/sessions/<int:session_id>/stress")
 def add_stress(session_id):
@@ -149,28 +239,26 @@ def add_stress(session_id):
     if "stress_score" not in data:
         return jsonify(error="Missing field: stress_score"), 400
     score = float(data["stress_score"])
-    ss = StressSample(
+    sample = StressSample(
         session_id=session_id,
         stress_score=score,
         emotion_label=data.get("emotion_label")
     )
-    db.session.add(ss)
+    db.session.add(sample)
     db.session.commit()
-    return jsonify({"stress_sample_id": ss.id}), 201
+    return jsonify({"stress_sample_id": sample.id}), 201
 
-@app.get("/sessions/<int:session_id>/summary")
-def session_summary(session_id):
+@app.get("/sessions/<int:session_id>/stress")
+def get_stress(session_id):
     Session.query.get_or_404(session_id)
-    trade_count = Trade.query.filter_by(session_id=session_id).count()
-    stress_count = StressSample.query.filter_by(session_id=session_id).count()
-    avg_stress = db.session.query(db.func.avg(StressSample.stress_score)).filter_by(session_id=session_id).scalar()
-    avg_stress = float(avg_stress) if avg_stress is not None else None
-    return jsonify({
-        "session_id": session_id,
-        "trade_count": trade_count,
-        "stress_sample_count": stress_count,
-        "average_stress_score": avg_stress
-    }), 200
+    samples = StressSample.query.filter_by(session_id=session_id).order_by(StressSample.timestamp).all()
+
+    return jsonify([{
+        "stress_sample_id": s.id,
+        "stress_score": s.stress_score,
+        "emotion_label": s.emotion_label,
+        "timestamp": s.timestamp.isoformat()
+    } for s in samples]), 200
 
 # Create Database Tables
 

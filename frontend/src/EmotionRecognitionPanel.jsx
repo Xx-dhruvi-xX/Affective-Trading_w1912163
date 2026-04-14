@@ -106,7 +106,7 @@ function computeStressScore(vad){
     const stress = clamp(0.65 * arousal + 0.35 * negative_Valence, 0, 1);
     return Math.round(stress * 100);
 }
-export default function EmotionRecognitionPanel() {
+export default function EmotionRecognitionPanel({sessionId = null}) {
     // reference to <video> element
     const videoRef = useRef(null);
     //UI state
@@ -183,7 +183,19 @@ export default function EmotionRecognitionPanel() {
                     setTopEmotion({ label: formatLabel(best.label), confidence: best.confidence});
                     //VAD + stress score
                     const vadNow = calculateVAD(result.expressions); setVad(vadNow);
-                    const stressNow = computeStressScore(vadNow); setStressScore(stressNow)
+                    const stressNow = computeStressScore(vadNow);
+                    setStressScore(stressNow);
+                    // POST stress score to backend
+                    if (sessionId) {
+                        fetch(`http://localhost:5000/sessions/${sessionId}/stress`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                stress_score: stressNow,
+                                emotion_label: best.label,
+                            }),
+                        }).catch(() => {});
+                    }
                 }, DETECTION_INTERVAL_MS);
             } catch (e){
                 console.error(e);

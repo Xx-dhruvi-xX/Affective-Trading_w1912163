@@ -10,13 +10,16 @@
 */
 
 import {useEffect, useState} from 'react';
-import EmotionRecognitionPanel  from './EmotionRecognitionPanel';
+import { RouterProvider } from 'react-router-dom';
+import {SessionProvider} from './SessionContext';
+import router from './Router'; // React Router configuration  
+//import EmotionRecognitionPanel  from './EmotionRecognitionPanel';
+import Splashscreen from './Splashscreen';
 
 export default function App() {
   return (
-    <div style = {{fontFamily: "system-ui", padding:"24"}}>
-      <h1>Affective Trading Frontend</h1>
-      <EmotionRecognitionPanel/>
-    </div>
+    <SessionProvider>
+      <RouterProvider router={router} />
+    </SessionProvider>
   )
 }

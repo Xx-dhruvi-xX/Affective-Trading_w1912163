@@ -1,0 +1,161 @@
+.splash{
+  position: fixed;
+  inset: 0;
+  background: var(--c-black);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.splash_aurora{
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.splash_aurora--1{
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(ellipse, rgba(74, 63, 160, 0.15) 0%, transparent 65%);
+  top: -15%;
+  right: -12px;
+  animation: auroraFloat 20s ease-in-out infinite;
+}
+.splash_aurora--2{
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(ellipse, rgba(44, 184, 160, 0.08) 0%, transparent 65%);
+  bottom: -18%;
+  left: -8px;
+  animation: auroraFloat 26s ease-in-out infinite reverse;
+}
+@keyframes auroraFloat{
+  0%, 100%{ transform: translate(0, 0) scale(1); opacity: 1;}
+  40%{ transform: translate(-4%, -7%) scale(1.1); opacity: 0.65;}
+  70%{ transform: translate(5%, -4%) scale(0.95); opacity: 0.9;}
+}
+.splash_star{
+  position: absolute;
+  border-radius: 50%;
+  background: #ffffff;
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+@keyframes starTwinkle{
+  0%, 100%{ opacity: 0.05; transform: scale(0.7);}
+  50%{ opacity: 0.3; transform: scale(1.2);}
+}
+.splash_content{
+  position: relative;
+  z-index: 3;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  transform-origin: center center;
+  animation: fadeUp 1.6s ease forwards;
+}
+.splash_content--expanding{
+  animation: netflixExpand 0.9s cubic-bezier(0.4, 0, 0.85, 1) forwards !important;
+}
+@keyframes netflixExpand{
+  0%{ transform: scale(1); opacity: 1; filter: brightness(1);}
+  55%{ transform: scale(18); opacity: 1; filter: brightness(1.4);}
+  100%{ transform: scale(22); opacity: 0; filter: brightness(2);}
+}
+.splash_eyebrow{
+  font-family: var(--f-mono);
+  font-size: 9px;
+  letter-spacing: 0.55em;
+  color: var(--c-muted);
+  text-transform: uppercase;
+  margin-bottom: 22px;
+  animation: fadeUp 1.6s ease 0.25s both;
+}
+.splash_title{
+  position: relative;
+  z-index: 10;
+  font-family: var(--f-display);
+  font-weight: 300;
+  font-size: clamp(52px, 9vw, 100px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 18px;
+  color: white;
+  animation: titleZoomOut 1.2s cubic-bezier(0.2, 0, 0.2, 1) forwards, titleGlow 4s ease-in-out 1.2s infinite;
+}
+@keyframes titleZoomOut{
+  0%{ transform: scale(1.6); opacity: 0;}
+  60%{ transform: scale(0.97); opacity: 1;}
+  100%{ transform: scale(1); opacity: 1;}
+}
+@keyframes silkShimmer{
+  from{ background-position: -250% center;}
+  to{ background-position: 250% center;}
+}
+.splash_subtitle{
+  font-family: var(--f-display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(14px, 2vw, 19px);
+  color: rgba(244, 244, 248, 0.45);
+  letter-spacing: 0.14em;
+  margin-bottom: 60px;
+  animation: fadeUp 1.6s ease 0.45s both;
+}
+.splash_btn-wrap{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeUp 1.6s ease 0.7s both;
+}
+.splash_sparkle{
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  will-change: opacity, transform;
+}
+@keyframes sparkleBreath{
+  0%, 100%{ opacity: 0; transform: scale(0.4);}
+  35%{ opacity: 0.75; transform: scale(1);}
+  65%{ opacity: 0.35; transform: scale(0.7);}
+}
+.splash_btn{
+  position: relative;
+  z-index: 1;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid rgba(196, 168, 122, 0.35);
+  color: rgba(244, 244, 248, 0.80);
+  font-family: var(--f-display);
+  font-weight: 300;
+  font-size: 13px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  outline: none;
+  backdrop-filter: blur(4px);
+  transition: border-color 0.4s, color 0.4s;
+  animation: buttonBreath 3.2s ease-in-out infinite;
+}
+.splash_btn:hover{
+  border-color: rgba(196, 168, 122, 0.85);
+  color: var(--c-white);
+}
+@keyframes buttonBreath{
+  0%, 100%{ border-color: rgba(196, 168, 122, 0.28); box-shadow: 0 0 0 0 rgba(196, 168, 122, 0), 0 0 18px 0 rgba(124, 92, 252, 0.10);}
+  50%{ border-color: rgba(196, 168, 122, 0.72); box-shadow: 0 0 0 10px rgba(196, 168, 122, 0.03), 0 0 36px 0 rgba(124, 92, 252, 0.22);}
+}
+.splash_hint{
+  margin-top: 28px;
+  font-family: var(--f-mono);
+  font-size: 9px;
+  letter-spacing: 0.4em;
+  color: rgba(66, 66, 90, 0.7);
+  text-transform: uppercase;
+  animation: fadeUp 1.6s ease 1s both;
+}
