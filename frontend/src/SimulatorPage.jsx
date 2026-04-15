@@ -1,7 +1,7 @@
 import {useState} from "react";
 import TradingSimulator from "./TradingSimulator";
 import EmotionRecognitionPanel from "./EmotionRecognitionPanel";
-import {useSession} from "./SessionContext";
+import {useSession} from "./Sessioncontext";
 
 export default function SimulatorPage() {
   const[panelOpen, setPanelOpen] = useState(true);

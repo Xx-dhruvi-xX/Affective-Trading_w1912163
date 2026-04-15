@@ -5,7 +5,6 @@ import {STOCKS} from "./data/Stocks";
 import "./Styles/TradingSimulator.css";
 
 const FLASK_BASE = "http://localhost:5000";
-const PRICE_UPDATE_MS = 5000;
 const STARTING_CASH = 100000;
 
 const fmt = (n, d = 2) =>
@@ -18,8 +17,8 @@ const pctChange = (a,b) => (b === 0 ? 0: ((a-b)/b) * 100);
 
 export default function TradingSimulator(){
   const navigate = useNavigate();
-  const {sessionId} = useSession();
-
+  const {sessionId, selectedScenario} = useSession();
+  const priceUpdateMs = selectedScenario?.updateIntervalMs ?? 10000;
   const initialPrices = Object.fromEntries(STOCKS.map((s) => [s.symbol, 0]));
   const [prices, setPrices] = useState(initialPrices);
   const [prevPrices, setPrevPrices] = useState(initialPrices);
@@ -36,6 +35,7 @@ export default function TradingSimulator(){
   useEffect(() => {
     const symbols = STOCKS.map((s) => s.symbol).join(',');
     const fetchQuotes = async() => {
+      console.log("Fetching quote at",new Date().toLocaleTimeString(), "Interval:",priceUpdateMs);
       try{
         const res = await fetch(`${FLASK_BASE}/market/quotes?symbols=${symbols}`);
         if(!res.ok){
@@ -60,9 +60,9 @@ export default function TradingSimulator(){
       }
     };
     fetchQuotes();
-    const id = setInterval(fetchQuotes, PRICE_UPDATE_MS);
+    const id = setInterval(fetchQuotes, priceUpdateMs);
     return() => clearInterval(id);
-  }, []);
+  }, [priceUpdateMs]);
   const holdingsValue = Object.entries(holdings).reduce((sum, [sym, qty]) => sum + qty * (prices[sym] ?? 0), 0);
   const totalValue = cash + holdingsValue;
   const pnl = totalValue - STARTING_CASH;
@@ -154,6 +154,7 @@ export default function TradingSimulator(){
         <div className="sim_topbar-left">
           <span className="sim_label">Simulator</span>
           {sessionId && <span className="sim_session-tag">Session #{sessionId}</span>}
+          {selectedScenario && (<span className="sim_session-tag">{selectedScenario.name}</span>)}
           {backendOk !== null && (
             <span className={`sim_backend-dot sim_backend-dot--${backendOk ? 'ok':'err'}`}>
               . {backendOk ? 'BACKEND OK':'BACKEND ERR'}
@@ -182,7 +183,7 @@ export default function TradingSimulator(){
                 {STOCKS.map(({symbol, name}) => (
                   <button 
                   key={symbol} 
-                  className={`sim_price-row${selected === symbol ? 'sim_price-row--active':''}`}
+                  className={`sim_price-row${selected === symbol ? 'sim_price-row--active' :''}`}
                   onClick={() => setSelected(symbol)}
                   >
                     <div>
@@ -201,7 +202,7 @@ export default function TradingSimulator(){
                     </button>
                 ))}
                 <p className="sim_price-note">
-                  {pricesLoading ? 'Loading live quotes...' : 'Live quotes refresh every 5s'}
+                  {pricesLoading ? 'Loading live quotes...' : `Live quotes refresh every ${priceUpdateMs/1000}s`}
                 </p>
                 </div>
                 <div className="sim_trade-col">
@@ -220,7 +221,7 @@ export default function TradingSimulator(){
                         {['BUY', 'SELL'].map((s) => (
                           <button
                           key={s}
-                          className={`sim_side-btn${side === s ? `sim_side-btn--${s.toLowerCase()}-active`: ''}`}
+                          className={`sim_side-btn${side === s ? `sim_side-btn--${s.toLowerCase()}-active` : ''}`}
                           onClick={() => setSide(s)}
                           >{s}</button>
                         ))}
@@ -235,7 +236,7 @@ export default function TradingSimulator(){
                       />
                       <div className="sim_cost-row">
                         <span className="sim_cost-label">{side === 'BUY' ? 'Total cost':'Proceeds'}</span>
-                        <span className={`sim_cost-label sim_cost-value--${side.toLowerCase()}`}>
+                        <span className={`sim_cost-value sim_cost-value--${side.toLowerCase()}`}>
                           {prices[selected] > 0 ? fmtCcy(tradeValue):'-'}
                         </span>
                       </div>

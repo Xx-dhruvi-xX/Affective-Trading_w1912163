@@ -17,27 +17,32 @@ import Splashscreen from './Splashscreen';
 import DisclosureScreen from './DisclosureScreen';
 import SimulatorPage from './SimulatorPage';
 import DashboardPage from './Dashboard';
+import ScenarioSelection from './ScenarioSelection';
 
 const router = createBrowserRouter([
   {
-    path:    '/',
+    path: '/',
     element: <Splashscreen />,  
   },
  {
-    path:    '/disclosure',
+    path: '/disclosure',
     element: <DisclosureScreen />,
   },
   {
-    path:    '/simulator',
-    element: <SimulatorPage />,
+    path: '/scenario',
+    element: <ScenarioSelection/>,
   },
   {
-    path:    '/dashboard',
-    element: <DashboardPage />,
+    path: '/simulator',
+    element: <SimulatorPage/>,
+  },
+  {
+    path: '/dashboard',
+    element: <DashboardPage/>,
   },
   {
     // Catch-all — redirect unknown paths to splash
-    path:    '*',
+    path: '*',
     element: <Navigate to="/" replace />,
   },
 ]);

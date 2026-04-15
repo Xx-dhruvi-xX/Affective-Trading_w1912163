@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useSession } from "./SessionContext";
+import { useSession } from "./Sessioncontext";
 import './Styles/DisclosureScreen.css';
 
 const FLASK_BASE = 'http://localhost:5000';
@@ -57,7 +57,7 @@ export default function DisclosureScreen() {
         return;
       }
       setSessionId(data.session_id);
-      navigate('/simulator');
+      navigate('/scenario');
     } catch (error) {
       console.error("Error starting session:", error);
       alert("An error occurred while starting the session. Please try again.");
@@ -75,7 +75,7 @@ export default function DisclosureScreen() {
         <div className="disclosure_cards">
           {CARDS.map((card, idx) => (
             <div key={idx} className="disclosure_card" style = {{borderLeftColor: card.accent, animationDelay: `${0.15 + idx * 0.08}s`}}>
-              <span className="disclosure_card-icon">{card.icon.icon}</span>
+              <span className="disclosure_card-icon">{card.icon}</span>
               <div>
                 <p className="disclosure_card-title">{card.title}</p>
                 <p className="disclosure_card-body">{card.body}</p>
