@@ -11,7 +11,7 @@
  *
  * Notes:
  * - This is a prototype mapping (heuristic weights). The final version can
- *   replace this with a trained CNN/TFJS pipeline.
+ *   replace this with a more advanced lightweight browser-based affective model.
  */
 
 
@@ -27,7 +27,8 @@ const FACE_DETECTION_DIR = `${MODEL_BASE_URL}/face_detection`;
 const EXPRESSION_MODEL_DIR = `${MODEL_BASE_URL}/facial_expression_recognition`;
 
 // how often prediction is run
-const DETECTION_INTERVAL_MS = 200;
+const DETECTION_INTERVAL_MS = 500;
+const BACKEND_LOG_INTERVAL_MS = 3000;
 function getDominantExpression(expressions) {
     if (!expressions) return { label: "none", confidence: 0};
     let best = { label: "none", confidence: 0};
@@ -141,6 +142,7 @@ export default function EmotionRecognitionPanel({sessionId = null}) {
     useEffect ( () => {
         let stream = null;
         let timeId = null;
+        let lastBackendLogAt = 0;
 
         async function start() {
             setPermissionError("");
@@ -162,8 +164,8 @@ export default function EmotionRecognitionPanel({sessionId = null}) {
                 setStatus("Camera active. Running live inference...");
                 // configure Face api options
                 const options = new faceapi.TinyFaceDetectorOptions({
-                    inputSize: 224,
-                    scoreThreshold: 0.5,
+                    inputSize: 128,
+                    scoreThreshold: 0.3,
                 });
                 //start detection loop
                 timeId = window.setInterval(async() => {
@@ -185,8 +187,12 @@ export default function EmotionRecognitionPanel({sessionId = null}) {
                     const vadNow = calculateVAD(result.expressions); setVad(vadNow);
                     const stressNow = computeStressScore(vadNow);
                     setStressScore(stressNow);
+                    const now = Date.now();
+                    console.log("Stress check", {sessionId, now, lastBackendLogAt, stressNow, emotion: best.label})
                     // POST stress score to backend
-                    if (sessionId) {
+                    if (sessionId && now - lastBackendLogAt >= BACKEND_LOG_INTERVAL_MS) {
+                        lastBackendLogAt = now;
+                        console.log("posting stress sample")
                         fetch(`http://localhost:5000/sessions/${sessionId}/stress`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -225,7 +231,7 @@ export default function EmotionRecognitionPanel({sessionId = null}) {
         if (isEnabled) start();
         else stop();
         return() => stop();
-    },[isEnabled]);
+    },[isEnabled, sessionId]);
     return (
         <div style={{ maxWidth: 720, margin: "0 auto", padding: 16}}> 
         <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8}}> Emotion Recognition</h2>

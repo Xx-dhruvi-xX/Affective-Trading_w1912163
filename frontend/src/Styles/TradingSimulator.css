@@ -38,7 +38,7 @@
 .sim_backend-dot--ok{
   color: #2db8a0;
 }
-.sim_backend-dot--error{
+.sim_backend-dot--err{
   color: #f87171;
 }
 .sim_topbar-right{
@@ -54,10 +54,10 @@
   font-weight: 700;
   font-size: 14px;
 }
-.sim_portfolio-value--gain{
+.sim_portfolio-value--up{
   color: #4ade80;
 }
-.sim_portfolio-value--loss{
+.sim_portfolio-value--down{
   color: #f87171;
 }
 .sim_pnl{
@@ -155,10 +155,10 @@
   margin-top: 2px;
   text-align: right;
 }
-.sim_price-change--gain{
+.sim_price-change--up{
   color: #4ade80;
 }
-.sim_price-change--loss{
+.sim_price-change--down{
   color: #f87171;
 }
 .sim_price-note{
@@ -176,7 +176,7 @@
   margin-bottom: 24px;
 }
 .sim_selected-symbol{
-  font-family: 'CORMORANT GARALMOND', serif;
+  font-family: 'Cormorant Garalmond', serif;
   font-weight: 300;
   font-size: 38px;
   letter-spacing: 0.1em;
@@ -313,7 +313,7 @@
   border-color: rgba(44, 184, 160, 0.45);
   color: #2db8a0;
 }
-.sim_msg--error{
+.sim_msg--err{
   background: rgba(248, 113, 113, 0.08);
   border-color: rgba(248, 113, 113, 0.45);
   color: #f87171;
@@ -423,35 +423,35 @@
 .sim_port-total-pnl--loss{
   color: #f87171;
 }
-.sim_holdings-row{
+.sim_holding-row{
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 10px 0;
   border-bottom: 1px solid #1a1a30;
 }
-.sim_holdings-symbol{
+.sim_holding-symbol{
   font-size: 12px;
   font-weight: 700;
 }
-.sim_holdings-qty{
+.sim_holding-qty{
   font-size: 9px;
   color: #42425a;
   margin-top: 2px;
 }
-.sim_holdings-value{
+.sim_holding-value{
   font-size: 13px;
   font-weight: 700;
   color: #c4a87a;
   text-align: right;
 }
-.sim_holdings-price{
+.sim_holding-price{
   font-size: 9px;
   color: #7878a0;
   margin-top: 2px;
   text-align: right;
 }
-.sim_holdings-empty{
+.sim_holding-empty{
   font-size: 10px;
   color: #252545;
   text-align: center;

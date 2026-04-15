@@ -19,6 +19,7 @@ import os
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
+import requests
 
 # Load environment variables from .env file
 
@@ -115,6 +116,14 @@ def db_test():
         return jsonify(db_status="connected"), 200
     except Exception as e:
         return jsonify(db_status="error", message=str(e)), 500
+
+@app.get("/test-key")
+def test_key():
+    key = os.getenv("FINNHUB_API_KEY")
+    if key:
+        return{"status":"API key loaded successfully"}
+    else:
+        return{"status":"API key not found"}
 
 # Session Endpoints
 
@@ -259,6 +268,54 @@ def get_stress(session_id):
         "emotion_label": s.emotion_label,
         "timestamp": s.timestamp.isoformat()
     } for s in samples]), 200
+
+# Stock API Route Endpoint
+
+# Temporary testing endpoint for API validation
+@app.get("/test/quote/<symbol>")
+def get_stock(symbol):
+    api_key = os.getenv("FINNHUB_API_KEY")
+    url = f"https://finnhub.io/api/v1/quote?symbol={symbol}&token={api_key}"
+    try:
+        request = requests.get(url)
+        data = request.json()
+
+        return{
+            "symbol":symbol,
+            "price":data.get("c"),
+            "high":data.get("h"), 
+            "low":data.get("l"),
+            "open":data.get("o"),
+            "previous_close":data.get("pc")
+        }
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.get("/market/quotes")
+def get_market_quotes():
+    api_key = os.getenv("FINNHUB_API_KEY")
+    symbols = request.args.get("symbols","")
+    symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+
+    if not symbol_list:
+        return jsonify({"error": "No symbols provided"}), 400
+    results = {}
+    for symbol in symbol_list:
+        try:
+            url = f"https://finnhub.io/api/v1/quote?symbol={symbol}&token={api_key}"
+            res = requests.get(url, timeout = 10)
+            data = res.json()
+
+            results[symbol] = {
+                "current":data.get("c"),
+                "high":data.get("h"), 
+                "low":data.get("l"),
+                "open":data.get("o"),
+                "previous_close":data.get("pc")
+            }
+        except Exception:
+            results[symbol] = None
+    return jsonify(results), 200
 
 # Create Database Tables
 
