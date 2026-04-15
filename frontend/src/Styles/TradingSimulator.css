@@ -203,6 +203,14 @@
   gap: 8px;
   margin-bottom: 20px;
 }
+.sim_back-btn{
+  background: transparent;
+  border: 1px solid #7c5cfc;
+  color: #7c5cfc;
+}
+.sim_back-btn:hover{
+  background: rgba(124, 92, 252, 0.1);
+}
 .sim_side-btn{
   flex: 1;
   padding: 10px 0;

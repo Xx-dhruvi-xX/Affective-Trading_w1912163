@@ -12,13 +12,15 @@ export default function ScenarioSelection() {
     return(
         <div style={{
             minHeight: '100vh',
+            width: '100%',
             background: '#07070e',
             color: '#f4f4f8',
             fontFamily: "'Space Mono', monospace",
-            padding: '48px 32px',
+            padding: '48px 40px 56px',
+            boxSizing: 'border-box',
         }}
         >
-            <div style={{maxWidth: 1100, margin: '0 auto'}}>
+            <div style={{Width: '100%', maxWidth: '1600px', margin: '0 auto'}}>
                 <p style={{
                     fontSize: 9,
                     letterSpacing: '0.45em',
@@ -31,21 +33,24 @@ export default function ScenarioSelection() {
                 <h1 style={{
                     fontFamily: "'Cormorant Garamond', serif",
                     fontWeight: 300,
-                    fontSize: 'clamp(32px, 5vw, 56px)',
-                    letterSpacing: '0.12em',
+                    fontSize: 'clamp(42px, 6vw, 84px)',
+                    letterSpacing: '0.1em',
                     textTransform: 'uppercase',
                     margin: 0,
-                    marginBottom: 16,
+                    marginBottom: 18,
+                    maxWidth: '900px',
+                    lineHeight: 0.95,
                 }} >
                     Choose your preferred scenario
                 </h1>
-                <p style={{ color: '#7878a0', maxWidth: 720, lineHeight: 1.8, marginBottom: 36}}>
+                <p style={{ color: '#7878a0', maxWidth: 720, lineHeight: 1.8, marginBottom: 42, fontSize: 14,}}>
                     Select a scenario to control the level of market pressure during the simulation.
                 </p>
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                    gap: 18,
+                    gap: 22,
+                    width: '100%',
                 }}>
                     {SCENARIOS.map((scenario) => (
                         <button
@@ -55,7 +60,7 @@ export default function ScenarioSelection() {
                             background: '#0d0d1c',
                             border: '1px solid #1a1a30',
                             borderRadius: 14,
-                            padding: '22px 20px',
+                            padding: '24px 22px',
                             textAlign: 'left',
                             color: '#f4f4f8',
                             cursor: 'pointer',
@@ -84,17 +89,18 @@ export default function ScenarioSelection() {
                                 fontSize: 30,
                                 fontWeight: 300,
                                 margin: 0,
-                                marginBottom: 10,
+                                marginBottom: 12,
                                 color: '#c4a87a',
+                                lineHeight: 1.1,
                             }}
                             >
                                 {scenario.name}
                             </h2>
-                            <p style={{ fontSize: 12, lineHeight: 1.8, color: 'rgba(244, 244, 248, 0.72)', margin: 0 }}>
+                            <p style={{ fontSize: 13, lineHeight: 1.8, color: 'rgba(244, 244, 248, 0.72)', margin: 0 }}>
                                 {scenario.description}
                             </p>
                             <p style={{
-                                marginTop: 16,
+                                marginTop: 18,
                                 fontSize: 9,
                                 letterSpacing: '0.2em',
                                 color: '#7878a0',

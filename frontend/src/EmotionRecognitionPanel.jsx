@@ -233,26 +233,47 @@ export default function EmotionRecognitionPanel({sessionId = null}) {
         return() => stop();
     },[isEnabled, sessionId]);
     return (
-        <div style={{ maxWidth: 720, margin: "0 auto", padding: 16}}> 
-        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8}}> Emotion Recognition</h2>
-        <p style={{marginBottom: 12}}> Status: <strong>{status}</strong></p>
-        {permissionError && (<p style={{ marginBottom: 12, color: "red"}}>{permissionError}</p>)}
-        <button onClick={()=> setIsEnabled((v)=> !v)} style={{padding: "10px 14px",borderRadius: 8, border: "1px solid #000", cursor: "pointer", marginBottom: 12,}}>{isEnabled ? "Disable Camera": "Enable Camera"}</button>
-        <div style={{display: "grid", gridTemplateColumns: "1fr", gap: 12}}> 
-            <video ref = {videoRef} muted playsInline style={{width: "100%", borderRadius: 12, border: "1px solid #000", borderRadius: 12}}/>
-        <div style={{padding: 12, border: "1px solid #ddd"}}>
-            <div style={{fontSize: 16}}>
-                Predicted emotion:{""}
-                <strong>{topEmotion.label}</strong>
+        <div style={{maxWidth: 720, margin: '0 auto', padding: 16}}>
+            <div className="rounded-2xl border border-[#1a1a30] bg-[#0d0d1c] p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                        <h2 className="text=xl font-bold text-white mb-1">Emotion Recognition</h2>
+                        <p className="text-sm text-[#9a9ab5]">Status: <strong className="text-white">{status}</strong></p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs uppercase tracking-[0.2em] text-[#7878a0]">{isEnabled ? "On":"Off"}</span>
+                        <button 
+                        onClick={() => setIsEnabled((v) => !v)}
+                        className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 ${isEnabled ? "bg-emerald-500/80":"bg-[#23233a]"}`}
+                        >
+                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${isEnabled ? "translate-x-8":"translate-x-1"}`}/>  
+                        </button>
+                    </div>
+                </div>
+                {permissionError && (
+                    <p className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{permissionError}</p>
+                )}
+                <div className="grid gird-cols-1 gap-4">
+                    <video
+                    ref={videoRef}
+                    muted
+                    playsInline
+                    style={{
+                        width: "100%",
+                        borderRadius: 12,
+                        border: "1px solid #1a1a30",
+                        background: "#07070e",
+                    }}
+                    />
+                    <div className="rounded-xl border border-[#1a1a30] bg-[#07070e] p-4">
+                        <div className="text-base text-white">Predicted emotion: <strong>{topEmotion.label}</strong></div>
+                        <div className="text-sm text-[#c7c7d9] mt-2">Confidence: <strong>{(topEmotion.confidence * 100).toFixed(1)}%</strong></div>
+                        <div className="text-sm text-[#c7c7d9] mt-2">VAD: <strong>V{vad.v.toFixed(2)}| A{vad.a.toFixed(2)}| D{vad.d.toFixed(2)}</strong></div>
+                        <div className="text-base text-white mt-3">Stress Score: <strong>{stressScore}</strong></div>
+                        <div className="mt-4 text-xs text-[#7878a0]">Privacy Note: Inference runs locally in the browser; no video is uploaded.</div>
+                    </div>
+                </div>
             </div>
-            <div style={{fontSize: 14, marginTop: 6}}>
-                Confidence: <strong>{(topEmotion.confidence*100).toFixed(1)}%</strong>
-            </div>
-            <div style={{ fontSize: 16}}>VAD: {" "} <strong> V{vad.v.toFixed(2)}|A{vad.a.toFixed(2)}|D{vad.d.toFixed(2)} </strong></div>
-            <div style={{ fontSize: 16, marginTop: 8}}>Stress score: <strong>{stressScore}</strong></div>
-            <div style={{fontSize: 12, marginTop: 10, opacity: 0.8}}> Privacy note: Inference runs locally in the browser; no video is uploaded.</div>
-            </div>
-            </div>
-            </div>
+        </div>            
     );
 }

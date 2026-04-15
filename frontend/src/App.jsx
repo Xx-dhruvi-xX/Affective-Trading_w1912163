@@ -11,10 +11,8 @@
 
 import {useEffect, useState} from 'react';
 import { RouterProvider } from 'react-router-dom';
-import {SessionProvider} from './SessionContext';
-import router from './Router'; // React Router configuration  
-//import EmotionRecognitionPanel  from './EmotionRecognitionPanel';
-import Splashscreen from './Splashscreen';
+import {SessionProvider} from './Sessioncontext';
+import router from './Router'; // React Router configuration
 
 export default function App() {
   return (

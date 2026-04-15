@@ -172,6 +172,9 @@ export default function TradingSimulator(){
                 {fmtCcy(pnl)} ({pnlPct.toFixed(2)}%)
               </span>
             </span>
+            <button className="sim_back-btn" onClick={() => navigate('/scenario')}>
+              Change Scenario
+            </button>
             <button className="sim_end-btn" onClick={handleFinish}>
               End Session
             </button>

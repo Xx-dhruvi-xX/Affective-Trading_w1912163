@@ -13,7 +13,7 @@ export default function SimulatorPage() {
         <TradingSimulator/>
       </div>
       <aside style={{
-        width: panelOpen ? 350 : 40,
+        width: panelOpen ? 360 : 42,
         flexShrink: 0,
         borderLeft: '1px solid #1a1a30',
         background: '#07070e',
@@ -48,7 +48,7 @@ export default function SimulatorPage() {
         </button>
         {panelOpen && (
           <div style = {{
-            padding: '13px, 14px, 11px, 44px',
+            padding: '13px 14px 11px 44px',
             borderBottom: '1px solid #1a1a30',
             fontFamily: "'Space Mono', monospace",
             fontSize: 8,

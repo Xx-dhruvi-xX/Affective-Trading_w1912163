@@ -100,7 +100,6 @@ export default function SplashScreen() {
               />
             );
           })}
-
           <button className="splash_btn" onClick={handleBegin}>
             Begin
           </button>

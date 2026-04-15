@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate }         from 'react-router-dom';
-import { useSession }          from './SessionContext';
+import { useSession }          from './Sessioncontext';
 
 const FLASK_BASE = 'http://localhost:5000';
 
