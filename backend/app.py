@@ -150,7 +150,7 @@ def end_session(session_id):
 
 @app.get("/sessions/<int:session_id>/summary")
 def session_summary(session_id):
-    Session.query.get_or_404(session_id)
+    session = Session.query.get_or_404(session_id)
     portfolio = get_or_create_portfolio(session_id)
     trade_count = Trade.query.filter_by(session_id=session_id).count()
     stress_count = StressSample.query.filter_by(session_id=session_id).count()
@@ -161,6 +161,8 @@ def session_summary(session_id):
     cash_balance = float(portfolio.cash_balance)
     holdings = portfolio.holdings or {}
     final_portfolio_value = cash_balance
+    scenario = session.user_settings.get("scenario") if session.user_settings else None
+    risk_level = session.user_settings.get("risk_level") if session.user_settings else None
 
     return jsonify({
         "session_id": session_id,
@@ -170,7 +172,9 @@ def session_summary(session_id):
         "peak_stress_score": peak_stress,
         "cash_balance": cash_balance,
         "holdings": holdings,
-        "final_portfolio_value": final_portfolio_value
+        "final_portfolio_value": final_portfolio_value,
+        "scenario": scenario,
+        "risk_level": risk_level
     }), 200
 
 # Trade Endpoints

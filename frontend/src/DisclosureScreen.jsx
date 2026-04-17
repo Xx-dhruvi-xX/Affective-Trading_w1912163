@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { useSession } from "./Sessioncontext";
 import './Styles/DisclosureScreen.css';
 
-const FLASK_BASE = 'http://localhost:5000';
 
 const CARDS = [
   {
@@ -39,29 +37,8 @@ const CARDS = [
 
 export default function DisclosureScreen() {
   const navigate = useNavigate();
-  const { setSessionId } = useSession();
-  const handleAccept = async () => {
-    try {
-      const response = await fetch(`${FLASK_BASE}/sessions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      if (!response.ok) {
-        alert("Failed to start session. Please try again.");
-        return;
-      }
-      const data = await response.json();
-      if (!data.session_id) {
-        alert("Failed to start session. Please try again.");
-        return;
-      }
-      setSessionId(data.session_id);
-      navigate('/scenario');
-    } catch (error) {
-      console.error("Error starting session:", error);
-      alert("An error occurred while starting the session. Please try again.");
-    }
+  const handleAccept = () => {
+    navigate('/scenario');
   };
 
   return (

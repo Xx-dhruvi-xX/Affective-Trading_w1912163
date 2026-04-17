@@ -2,12 +2,36 @@ import {useNavigate} from 'react-router-dom';
 import { useSession } from './Sessioncontext';
 import {SCENARIOS} from './data/Scenarios';
 
+const FLASK_BASE = 'http://localhost:5000';
+
 export default function ScenarioSelection() {
     const navigate = useNavigate();
-    const {setSelectedScenario} = useSession();
-    const handleSelect = (scenario) => {
-        setSelectedScenario(scenario);
-        navigate('/simulator');
+    const {setSelectedScenario, setSessionId} = useSession();
+    const handleSelect = async(scenario) => {
+        try{
+            const response = await fetch(`${FLASK_BASE}/sessions`,{
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    scenario: scenario.name,
+                    risk_level: scenario.riskLevel,
+                    update_interval_ms: scenario.updateIntervalMs,
+                    description: scenario.description,
+                }),
+            });
+            if (!response.ok){
+                alert('Failed to start session. Please try again.');
+                return;
+            }
+            const data = await response.json();
+
+            setSelectedScenario(scenario);
+            setSessionId(data.session_id);
+            navigate('/simulator')
+        } catch(error){
+            console.error('Error starting scenario session:', error);
+            alert('An error occurred while starting the scenario.');
+        }
     };
     return(
         <div style={{
