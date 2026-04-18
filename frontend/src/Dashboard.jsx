@@ -11,11 +11,28 @@ function formatTimeLabel(isoString){
   const date = new Date(isoString);
   return date.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', second: '2-digit',});
 }
+function findNearestStressSample(trade, stressSamples) {
+  if(!trade?.timestamp || !stressSamples?.length) return null;
+  const tradeTime = new Date(trade.timestamp).getTime();
+  let nearestSample = null;
+  let smallestDiff = Infinity;
+  for(const sample of stressSamples){
+    const sampleTime = new Date(sample.timestamp).getTime();
+    const diff = Math.abs(sampleTime - tradeTime);
+    if(diff < smallestDiff){
+      smallestDiff = diff;
+      nearestSample = sample;
+    }
+  }
+  return nearestSample;
+}
 export default function Dashboard(){
   const navigate = useNavigate();
   const {sessionId, setSessionId} = useSession();
   const [summary, setSummary] = useState(null);
   const [stressSamples, setStressSamples] = useState([]);
+  const [trades, setTrades] = useState([]);
+  const [latestPrices, setLatestPrices] = useState({});
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     if(!sessionId){
@@ -24,14 +41,17 @@ export default function Dashboard(){
     }
     async function loadDashboardData() {
       try{
-        const [summaryRes, stressRes] = await Promise.all([
+        const [summaryRes, stressRes, tradesRes] = await Promise.all([
           fetch(`${FLASK_BASE}/sessions/${sessionId}/summary`),
           fetch(`${FLASK_BASE}/sessions/${sessionId}/stress`),
+          fetch(`${FLASK_BASE}/sessions/${sessionId}/trades`),
         ]);
         const summaryData = await summaryRes.json();
         const stressData = await stressRes.json();
+        const tradesData = await tradesRes.json();
         setSummary(summaryData);
         setStressSamples(Array.isArray(stressData) ? stressData : []);
+        setTrades(Array.isArray(tradesData) ? tradesData : []);
       } catch(error){
         console.error('Failed to load dashboard data:',error);
       } finally{
@@ -40,6 +60,25 @@ export default function Dashboard(){
     }
     loadDashboardData();
   }, [sessionId]);
+  useEffect(() => {
+    const holdings = summary?.holdings ?? {};
+    const symbols = Object.keys(holdings);
+    if(!symbols.length){
+      setLatestPrices({});
+      return;
+    }
+    async function loadLatestPrices() {
+      try{
+        const res = await fetch(`${FLASK_BASE}/market/quotes?symbols=${symbols.join(",")}`);
+        const data = await res.json();
+        setLatestPrices(data || {});
+      } catch(error){
+        console.error("Failed to load latest prices for holdings: ", error);
+        setLatestPrices({});
+      }
+    }
+    loadLatestPrices();
+  }, [summary]);
   const handleExit = () => {
     setSessionId(null);
     navigate('/');
@@ -53,7 +92,7 @@ export default function Dashboard(){
   const insight = 
   avgStress == null ? 'No stress data recorded this session. Enable emotion recognition during the next session.' :
   avgStress < 30 ? 'You traded calmly this session. Low stress is associated with more rational decision-making and reduced susceptibility to panic selling and loss aversion.':
-  avgStress < 60 ? 'You experienced moderate stress during this session. Consider pausing before placing trades when stress rises-elevated arousal can increase impulsive decision-making.':
+  avgStress < 60 ? 'You experienced moderate stress during this session. Consider pausing before placing trades when stress rises as elevated arousal can increase impulsive decision-making.':
   'High stress was detected during this session. Research shows high emotional arousal significantly increases loss aversion and herding behaviour.';
   const stressChartData = useMemo( () => {
     return stressSamples.map((sample,index) => ({
@@ -62,6 +101,69 @@ export default function Dashboard(){
       stress: sample.stress_score,
     }));
   }, [stressSamples]);
+  const tradesWithStress = useMemo(() => {
+    return trades.map((trade) => {
+      const nearestStress = findNearestStressSample(trade, stressSamples);
+      return{
+        ...trade,
+        linked_stress_score: nearestStress ? nearestStress.stress_score: null,
+      };
+    });
+  }, [trades, stressSamples]);
+  const holdings = summary?.holdings ?? {};
+  const holdingsValue = Object.entries(holdings).reduce((sum, [symbol, qty]) => {
+    const livePrice = latestPrices?.[symbol]?.current ?? 0;
+    return sum + Number(qty) * Number(livePrice);
+  }, 0);
+  const cashBalance = Number(summary?.cash_balance ?? 0);
+  const finalPortfolioValue = cashBalance + holdingsValue;
+  const buyTrades = useMemo(() => tradesWithStress.filter((trade) => trade.side === "BUY" && trade.linked_stress_score != null),[tradesWithStress]);
+  const sellTrades = useMemo(() => tradesWithStress.filter((trade) => trade.side === "SELL" && trade.linked_stress_score != null),[tradesWithStress]);
+  const avgBuyStress = useMemo(() => {if(!buyTrades.length) return null; return buyTrades.reduce((sum, trade) => sum + trade.linked_stress_score, 0)/ buyTrades.length;}, [buyTrades]);
+  const avgSellStress = useMemo(() => {if(!sellTrades.length) return null; return sellTrades.reduce((sum, trade) => sum + trade.linked_stress_score, 0)/ sellTrades.length;}, [sellTrades]);
+  const highestStressTrade = useMemo(() => {if(!tradesWithStress.length) return null;
+    const validTrades = 
+    tradesWithStress.filter((trade) => trade.linked_stress_score != null);
+    if(!validTrades.length) return null;
+    return validTrades.reduce((highest, current) => current.linked_stress_score > highest.linked_stress_score ? current:highest);
+  }, [tradesWithStress]);
+    const portfolioChartData = useMemo(() => {
+    const points = [];
+    let runningCash = 100000;
+    const runningHoldings = {};
+    points.push({
+      time: "start",
+      portfolioValue: 100000,
+    });
+    for (const trade of trades){
+      const qty = Number(trade.quantity);
+      const price = Number(trade.price);
+      const symbol = trade.symbol;
+      const side = trade.side;
+      if(side === "BUY"){
+        runningCash -= qty * price;
+        runningHoldings[symbol] = (runningHoldings[symbol] ?? 0) + qty;
+      } else if(side === "SELL"){
+        runningCash += qty * price;
+        runningHoldings[symbol] = (runningHoldings[symbol] ?? 0) - qty;
+        if(runningHoldings[symbol] <= 0)
+        {
+          delete runningHoldings[symbol];
+        }
+      }
+      const holdingsMarketValue = Object.entries(runningHoldings).reduce((sum, [heldSymbol, heldQty]) => {
+        const livePrice = latestPrices?.[heldSymbol]?.current ?? 0;
+        return sum + Number(heldQty) * Number(livePrice);
+      },
+      0
+    );
+    points.push({
+      time: formatTimeLabel(trade.timestamp),
+      portfolioValue: runningCash + holdingsMarketValue,
+    });
+  }
+  return points;
+}, [trades, latestPrices]);
   return(
     <div style={{
       minHeight: '100vh',
@@ -79,7 +181,7 @@ export default function Dashboard(){
         padding: '0 40px',
         height: 50,
         borderBottom: '1px solid #1a1a30',
-        background: '07070e',
+        background: '#07070e',
       }}>
         <span style={{
           fontSize: 9,
@@ -92,7 +194,7 @@ export default function Dashboard(){
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '16'
+          gap: 16,
         }}>
           {sessionId && (
             <span style={{
@@ -155,7 +257,7 @@ export default function Dashboard(){
             <div style={{
               width: 40,
               height: 1,
-              background: 'linear-gradient(90deg, #4a33fa0, #2db8ao)',
+              background: 'linear-gradient(90deg, #4a3fa0, #2db8a0)',
               marginTop: 20,
             }} />
             </div>
@@ -315,7 +417,14 @@ export default function Dashboard(){
                 </p>
               </div>
             </div>
-
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 16,
+              width: '100%',
+              marginBottom: 40,
+            }}>
+            <div>
             <p
               style={{
                 fontSize: 8,
@@ -337,7 +446,6 @@ export default function Dashboard(){
                 width: '100%',
                 height: 320,
                 boxSizing: 'border-box',
-                marginBottom: 40,
               }}
             >
               {stressChartData.length === 0 ? (
@@ -376,7 +484,158 @@ export default function Dashboard(){
                 </ResponsiveContainer>
               )}
             </div>
-
+            </div>
+            <div>
+            <p style={{
+                fontSize: 8,
+                letterSpacing: '0.45em',
+                color: '#42425a',
+                textTransform: 'uppercase',
+                marginBottom: 16,
+            }}>
+              Portfolio Value Trend
+            </p>
+            <div style={{
+                background: '#0d0d1c',
+                border: '1px solid #1a1a30',
+                borderRadius: 10,
+                padding: '20px 24px',
+                width: '100%',
+                height: 320,
+                boxSizing: 'border-box',
+            }}>
+              {portfolioChartData.length <= 1 ? (
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: '#7878a0',
+                    lineHeight: 1.8,
+                    margin: 0,
+                  }}
+                >
+                  No portfolio history available yet. Place trades during a session to generate a portfolio value trend.
+                </p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={portfolioChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1a1a30" />
+                    <XAxis dataKey="time" stroke="#7878a0" tick={{ fontSize: 10 }} />
+                    <YAxis stroke="#7878a0" tick={{ fontSize: 10 }} />
+                    <Tooltip
+                    formatter={(value) => formatCurrency(value)}
+                      contentStyle={{
+                        backgroundColor: '#111128',
+                        border: '1px solid #1a1a30',
+                        borderRadius: 8,
+                        color: '#f4f4f8',
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="portfolioValue"
+                      stroke="#c4a87a"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            </div>
+            </div>
+            <p style={{ 
+                 fontSize: 8,
+                 letterSpacing: '0.45em',
+                  color: '#42425a',
+                 textTransform: 'uppercase',
+                 marginBottom: 16,
+              }}
+            >
+              Trade Stress Insight
+            </p>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 16,
+              width: '100%',
+              marginBottom: 40, 
+            }}>
+              <div style={{
+                background: '#0d0d1c',
+                border: '1px solid #1a1a30',
+                borderRadius: 10,
+                padding: '20px 24px',
+              }}>
+                <p style={{
+                 fontSize: 8,
+                  letterSpacing: '0.4em',
+                  color: '#42425a',
+                  textTransform: 'uppercase',
+                  marginBottom: 12,
+                }}>
+                  Avg Buy Stress
+                </p>
+                <p style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontWeight: 300,
+                  fontSize: 34,
+                  color: '#2db8a0',
+                  margin: 0,
+                }}>
+                  {avgBuyStress != null ? Math.round(avgBuyStress) : '-'}
+                </p>
+              </div>
+              <div style={{
+                background: '#0d0d1c',
+                border: '1px solid #1a1a30',
+                borderRadius: 10,
+                padding: '20px 24px',
+              }}>
+                <p style={{
+                 fontSize: 8,
+                  letterSpacing: '0.4em',
+                  color: '#42425a',
+                  textTransform: 'uppercase',
+                  marginBottom: 12,
+                }}>
+                  Avg Sell Stress
+                </p>
+                <p style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontWeight: 300,
+                  fontSize: 34,
+                  color: '#f87171',
+                  margin: 0,
+                }}>
+                  {avgSellStress != null ? Math.round(avgSellStress) : '-'}
+                </p>
+              </div>
+              <div style={{
+                background: '#0d0d1c',
+                border: '1px solid #1a1a30',
+                borderRadius: 10,
+                padding: '20px 24px',
+              }}>
+                <p style={{
+                 fontSize: 8,
+                  letterSpacing: '0.4em',
+                  color: '#42425a',
+                  textTransform: 'uppercase',
+                  marginBottom: 12,
+                }}>
+                  Highest-Stress Trade
+                </p>
+                <p style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontWeight: 300,
+                  fontSize: 34,
+                  color: '#c4a87a',
+                  margin: 0,
+                }}>
+                  {highestStressTrade ? `${highestStressTrade.side} ${highestStressTrade.symbol} (${Math.round(highestStressTrade.linked_stress_score)})`: "Not available"}
+                </p>
+              </div>
+            </div>  
             <p
               style={{
                 fontSize: 8,
@@ -432,7 +691,7 @@ export default function Dashboard(){
                   style={{
                     display: 'grid',
                     gridTemplateColumns:
-                      Object.keys(summary.holdings ?? {}).length > 0 ? '1fr 1fr' : '1fr',
+                      Object.keys(holdings).length > 0 ? 'repeat(3, 1fr)': 'repeat(2, 1fr)',
                     gap: 16,
                     width: '100%',
                     marginBottom: 40,
@@ -467,67 +726,115 @@ export default function Dashboard(){
                         margin: 0,
                       }}
                     >
-                      {formatCurrency(summary.cash_balance)}
+                      {formatCurrency(cashBalance)}
                     </p>
                   </div>
-
-                  {Object.keys(summary.holdings ?? {}).length > 0 && (
-                    <div
+                  <div style={{
+                    background: '#0d0d1c',
+                    border: '1px solid #1a1a30',
+                    borderRadius: 10,
+                    padding: '20px 24px',
+                  }}>
+                    <p style={{
+                      fontSize: 8,
+                      letterSpacing: '0.4em',
+                      color: '#42425a',
+                      textTransform: 'uppercase',
+                      marginBottom: 12,
+                    }}>
+                      Holdings Value
+                    </p>
+                    <p
                       style={{
-                        background: '#0d0d1c',
-                        border: '1px solid #1a1a30',
-                        borderRadius: 10,
-                        padding: '20px 24px',
-                      }}
-                    >
-                      <p
-                        style={{
-                          fontSize: 8,
-                          letterSpacing: '0.4em',
-                          color: '#42425a',
-                          textTransform: 'uppercase',
-                          marginBottom: 12,
-                        }}
-                      >
-                        Open Positions
+                        fontFamily: "'Cormorant Garamond', serif",
+                        fontWeight: 300,
+                        fontSize: 36,
+                        color: '#7c5cfc',
+                        margin: 0,
+                      }}>
+                      {formatCurrency(holdingsValue)}
+                    </p>
+                  </div>
+                  <div style={{
+                    background: '#0d0d1c',
+                    border: '1px solid #1a1a30',
+                    borderRadius: 10,
+                    padding: '20px 24px',
+                  }}>
+                     <p style={{
+                      fontSize: 8,
+                      letterSpacing: '0.4em',
+                      color: '#42425a',
+                      textTransform: 'uppercase',
+                      marginBottom: 12,
+                      }}>
+                        Final Portfolio Value
                       </p>
-
-                      {Object.entries(summary.holdings).map(([sym, qty]) => (
-                        <div
-                          key={sym}
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            padding: '8px 0',
-                            borderBottom: '1px solid #1a1a30',
-                            fontSize: 11,
-                          }}
-                        >
-                          <span style={{ fontWeight: 700 }}>{sym}</span>
-                          <span style={{ color: '#42425a' }}>{qty} shares</span>
-                        </div>
-                      ))}
+                      <p
+                      style={{
+                        fontFamily: "'Cormorant Garamond', serif",
+                        fontWeight: 300,
+                        fontSize: 36,
+                        color: '#4ade80',
+                        margin: 0,
+                      }}>
+                        {formatCurrency(finalPortfolioValue)}
+                      </p>
                     </div>
+                  </div>
+                  {Object.keys(holdings).length > 0 && (
+                    <div style={{
+                      background: '#0d0d1c',
+                      border: '1px solid #1a1a30',
+                      borderRadius: 10,
+                      padding: '20px 24px',
+                      marginBottom: 40,
+                    }}>
+                      <p style={{
+                      fontSize: 8,
+                      letterSpacing: '0.4em',
+                      color: '#42425a',
+                      textTransform: 'uppercase',
+                      marginBottom: 12,
+                    }}>
+                      Open Positions
+                    </p>
+                    {Object.entries(holdings).map(([sym,qty]) => {
+                      const livePrice = latestPrices?.[sym]?.current ?? 0;
+                      const positionValue = Number(qty) * Number(livePrice);
+                      return(
+                        <div 
+                        key={sym} 
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '8px 0',
+                          borderBottom: '1px solid #1a1a30',
+                          fontSize: 11,
+                        }}>
+                          <span style={{fontWeight: 700}}>{sym} ({qty} shares)</span>
+                          <span style={{color: '#7878a0'}}>{formatCurrency(positionValue)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                   )}
-                </div>
-              </>
+                  </>
+                )}
+                <p style={{
+                  fontSize: 10,
+                  color: '#42425a',
+                  letterSpacing: '0.2em',
+                  textAlign: 'center',
+                  lineHeight: 1.8,
+                  marginTop: 24,
+                }}>
+                  W1912163 . University of Westminster . 2025-2026
+                </p>
+                </>
             )}
-
-            <p
-              style={{
-                fontSize: 10,
-                color: '#42425a',
-                letterSpacing: '0.2em',
-                textAlign: 'center',
-                lineHeight: 1.8,
-                marginTop: 24,
-              }}
-            >
-              W1912163 · University of Westminster · Affective Trading · 2025
-            </p>
-          </>
-        )}
-      </div>
-    </div>
+            </div>
+            </div>
   );
 }
+            

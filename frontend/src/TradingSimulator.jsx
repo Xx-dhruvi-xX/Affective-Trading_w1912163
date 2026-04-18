@@ -35,7 +35,6 @@ export default function TradingSimulator(){
   useEffect(() => {
     const symbols = STOCKS.map((s) => s.symbol).join(',');
     const fetchQuotes = async() => {
-      console.log("Fetching quote at",new Date().toLocaleTimeString(), "Interval:",priceUpdateMs);
       try{
         const res = await fetch(`${FLASK_BASE}/market/quotes?symbols=${symbols}`);
         if(!res.ok){
@@ -140,13 +139,17 @@ export default function TradingSimulator(){
       }
     }
   }, [prices, selected, side, quantity, cash, holdings, sessionId]);
+  const [endingSession, setEndingSession] = useState(false);
   const handleFinish = async() => {
-    if(sessionId){
-      try{
-        await fetch(`${FLASK_BASE}/sessions/${sessionId}/end`, {method: 'POST'});
-      } catch {}
-    }
+    if(endingSession) return;
+    setEndingSession(true);
+    const currentSessionId = sessionId;
     navigate('/dashboard');
+    if(currentSessionId){
+      fetch(`${FLASK_BASE}/sessions/${currentSessionId}/end`, {
+        method: 'POST',
+      }).catch((err) => {console.error('Failed to end session:', err)});
+    }
   };
   return(
     <div className="sim">
@@ -175,8 +178,8 @@ export default function TradingSimulator(){
             <button className="sim_back-btn" onClick={() => navigate('/scenario')}>
               Change Scenario
             </button>
-            <button className="sim_end-btn" onClick={handleFinish}>
-              End Session
+            <button className="sim_end-btn" onClick={handleFinish} disabled={endingSession}>
+              {endingSession ? 'Ending...' : 'End Session'}
             </button>
             </div>
             </div>

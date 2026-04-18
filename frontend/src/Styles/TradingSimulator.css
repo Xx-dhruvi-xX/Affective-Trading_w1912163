@@ -81,6 +81,9 @@
   letter-spacing: 0.3em;
   text-transform: uppercase;
   transition: all 0.2s;
+  position: relative;
+  z-index: 20;
+  pointer-events: auto;
 }
 .sim_end-btn:hover{
   background: rgba(124, 92, 252, 0.14);
