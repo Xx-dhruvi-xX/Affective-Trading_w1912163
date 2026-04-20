@@ -1,17 +1,34 @@
+/** 
+*Affective Trading (Final Year Project)
+*Student Name: Dhruvi Soni
+*Student ID: W1912163/3
+*Supervisor: Dr. Alan Immanuel Benjamin Vallavaraj  
+*Module: 6COSC023W Computer Science Final Project
+* Description:
+*  Container page for the main simulator.
+*  It combines the TradingSimulator component and the EmotionRecognitionPanel
+*  component in a responsive layout.
+*/
 import {useState} from "react";
 import TradingSimulator from "./TradingSimulator";
 import EmotionRecognitionPanel from "./EmotionRecognitionPanel";
 import {useSession} from "./Sessioncontext";
 
 export default function SimulatorPage() {
+
+  // Controls whether the emotion recognition panel is open or collapsed. Defaults to open on page load.
   const[panelOpen, setPanelOpen] = useState(true);
+  
+  // Get the active session ID so it can be passed to the EmotionRecognitionPanel to fetch the relevant emotion data for the current trading session.
   const { sessionId } = useSession();
 
   return(
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#07070e'}}>
-      <div style={{ flex: 1, overflowY: 'auto', minWidth: 0 }}>
+      {/*Main simulator area containing trading interface */}
+      <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
         <TradingSimulator/>
       </div>
+      {/*Collapsible side panel containing emotion recognition controls with a toggle button */}
       <aside style={{
         width: panelOpen ? 360 : 42,
         flexShrink: 0,
@@ -23,6 +40,7 @@ export default function SimulatorPage() {
         display: 'flex',
         flexDirection: 'column',
       }}>
+        {/*Toggle button to open/collapse the emotion recognition panel.*/}
       <button onClick = {() => setPanelOpen(v => !v)}
         style={{
           position: 'absolute',

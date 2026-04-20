@@ -1,15 +1,20 @@
-/**
- * Affective Trading — SplashScreen.jsx
- * Student: Dhruvi Soni · W1912163/3
- * 
- * 
- */
+/** 
+*Affective Trading (Final Year Project)
+*Student Name: Dhruvi Soni
+*Student ID: W1912163/3
+*Supervisor: Dr. Alan Immanuel Benjamin Vallavaraj  
+*Module: 6COSC023W Computer Science Final Project
+* Description: 
+*  Splash screen shown when the application is first loaded.
+*/
 
-import { useState, useMemo }  from 'react';
-import { useNavigate }        from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Styles/Splashscreen.css'; // CSS for the splash screen animations and styles
 
 
+// Generate animation data for a set of twinkling stars randomly positioned across the screen
+// Each star has a random size, twinkle duration, and delay to create a natural, dynamic effect
 function makeStars(n) {
   return Array.from({ length: n }, (_, i) => ({
     id:i,
@@ -21,6 +26,9 @@ function makeStars(n) {
   }));
 }
 
+// Generate animation data for sparkles that orbit around the "Begin" button on the splash screen
+// Each sparkle has a random angle, distance from the center, size, color, and animation 
+// timing to create a magical effect
 function makeSparkles(n) {
   // Only pale gold and white — soft, not colourful
   const colours = [
@@ -42,11 +50,16 @@ function makeSparkles(n) {
 
 export default function SplashScreen() {
   const navigate  = useNavigate();
+  // Controls zoom out transition animation when user clicks "Begin" 
   const [zooming, setZooming] = useState(false);
 
+  // Generate the star and sparkle animation data once when the component mounts,
+  // and memoize it so it doesn't change on re-renders
   const stars = useMemo(() => makeStars(40),[]);
   const sparkles = useMemo(() => makeSparkles(10), []);
 
+  // When the user clicks "Begin", start the zoom out animation and navigate to the 
+  // disclosure page after a delay
   const handleBegin = () => {
     if (zooming) return;
     setZooming(true);

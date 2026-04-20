@@ -6,9 +6,20 @@ Supervisor: Dr. Alan Immanuel Benjamin Vallavaraj
 Module: 6COSC023W Computer Science Final Project
 
 Description:
-- Preprocess FER2013 images + FERPlus vote labels
-- Outputs train/val/test arrays in a compressed NPZ file
-- Saves metadata + label names for later model training
+First stage of the custom emotion recognition pipeline developed
+as a part of this project. Prepares the FER2013 image data together with
+the FERPlus crowd-sourced vote labels so that the CNN in train_cnn.py can be trained
+on a cleaned, reproducible dataset.
+
+key steps:
+- Loads FER2013 pixel data and usage splits from CSV
+- Loads FERPlus emotion vote counts from CSV
+- Merges datasets and applies filtering rules to remove ambiguous samples
+- Converts pixel strings to numpy arrays and normalises to [0,1]
+- Builds target arrays as either soft (probabilistic) or sparse (class index) labels
+- Saves processed arrays and metadata to compressed NPZ file for use in training and inference
+- Saves metadata about the processing steps and dataset characteristics to a JSON file for reference
+This script is designed to be run once to prepare the dataset, and can be re-run if the raw data files are updated or if the filtering rules are changed.
 """
 
 

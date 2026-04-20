@@ -1,25 +1,53 @@
+/** 
+*Affective Trading (Final Year Project)
+*Student Name: Dhruvi Soni
+*Student ID: W1912163/3
+*Supervisor: Dr. Alan Immanuel Benjamin Vallavaraj  
+*Module: 6COSC023W Computer Science Final Project
+* Description:
+*  Main trading simulator page for frontend prototype.
+*  It displays live stock prices, allows the user to place buy and sell trades,
+*  updates the local portfolio state, and syncs trades to the backend if a session
+*  is active and manages session completion before navigating to the dashboard.  
+*/
+
 import { useEffect, useState, useCallback } from "react";
 import {useNavigate} from "react-router-dom";
 import {useSession} from "./Sessioncontext";
 import {STOCKS} from "./data/Stocks";
 import "./Styles/TradingSimulator.css";
 
+// Base URL for Flask backend API
 const FLASK_BASE = "http://localhost:5000";
+
+// Starting cash for the trading simulator
 const STARTING_CASH = 100000;
 
+// Format numbers using British English locale, with specified decimal places
 const fmt = (n, d = 2) =>
   Number(n || 0).toLocaleString("en-GB", {
     minimumFractionDigits: d,
     maximumFractionDigits: d,
   });
+
+  // Format numeric values as GBP currency.
 const fmtCcy = (n) => `£${fmt(n)}`;
+
+// Calculate percentage change relative to baseline value.
 const pctChange = (a,b) => (b === 0 ? 0: ((a-b)/b) * 100);
 
 export default function TradingSimulator(){
   const navigate = useNavigate();
   const {sessionId, selectedScenario} = useSession();
+
+  // Price refresh rate dependent on the selected scenario
   const priceUpdateMs = selectedScenario?.updateIntervalMs ?? 10000;
+  
+  // Create an initial price map with all tracked stocks set to zero
+  // until live quotes are loaded from the backend
   const initialPrices = Object.fromEntries(STOCKS.map((s) => [s.symbol, 0]));
+  
+  // Component state for prices, trade form inputs, portfolio, and UI messages.
   const [prices, setPrices] = useState(initialPrices);
   const [prevPrices, setPrevPrices] = useState(initialPrices);
   const [selected, setSelected] = useState(STOCKS[0].symbol);
@@ -34,6 +62,9 @@ export default function TradingSimulator(){
 
   useEffect(() => {
     const symbols = STOCKS.map((s) => s.symbol).join(',');
+    
+    // Fetch live stock quotes for all configured stocks and refresh them
+    // repeatedly based on the selected scenario interval.
     const fetchQuotes = async() => {
       try{
         const res = await fetch(`${FLASK_BASE}/market/quotes?symbols=${symbols}`);
@@ -62,25 +93,32 @@ export default function TradingSimulator(){
     const id = setInterval(fetchQuotes, priceUpdateMs);
     return() => clearInterval(id);
   }, [priceUpdateMs]);
+
+  // Derived portfolio values used in the trading summary and sidebar.
   const holdingsValue = Object.entries(holdings).reduce((sum, [sym, qty]) => sum + qty * (prices[sym] ?? 0), 0);
   const totalValue = cash + holdingsValue;
   const pnl = totalValue - STARTING_CASH;
   const pnlPct = pctChange(totalValue, STARTING_CASH);
   const tradeValue = (prices[selected] ?? 0) * quantity;
+  
+  // Compare current and previous prices to determine whether a stock is moving up or down.
   const isUp = (sym) => (prices[sym] ?? 0) >= (prevPrices[sym] ?? 0);
   const executeTrade = useCallback(async() => {
     setMsg(null);
     const price = prices[selected];
     const qty = parseInt(quantity, 10);
 
+    // prevent trades if live pricing is unavailable.
     if(!price || price <= 0){
       setMsg({ok: false, text: "Live price not available yet. Please wait."});
       return;
     }
+    // Ensuring the entered quantity is valid
     if(!qty || qty <= 0){
       setMsg({ok: false, text: "Quantity must be at-least 1."});
       return;
     }
+    // Apply local trading rules before syncing to backend.
     if(side === "BUY"){
       if(price * qty > cash){
         setMsg({ok: false, text: `Insufficient funds. Need ${fmtCcy(price * qty)}.`});
@@ -103,6 +141,8 @@ export default function TradingSimulator(){
         return updated;
       });
     }
+
+    // Record the trade in local state immediately for responsive UI.
     const trade = {
       id: Date.now(),
       symbol: selected, side,
@@ -111,6 +151,8 @@ export default function TradingSimulator(){
     };
     setTrades((t) => [trade, ...t]);
     setMsg({ok: true, text: `${side} ${qty} x ${selected} @ ${fmtCcy(price)}`});
+    
+    // If a backend session exists, send the trade details to the FLASK API.
     if(sessionId){
       try{
         const r = await fetch(`${FLASK_BASE}/sessions/${sessionId}/trades`,{
@@ -123,6 +165,8 @@ export default function TradingSimulator(){
         });
         const data = await r.json();
         setBackendOk(r.ok);
+
+        // Use backend values as final source of truth for cash and holdings to prevent divergence between frontend and backend state.
         if(r.ok){
           if(typeof data.new_cash_balance === 'number'){
             setCash(data.new_cash_balance);
@@ -141,9 +185,11 @@ export default function TradingSimulator(){
   }, [prices, selected, side, quantity, cash, holdings, sessionId]);
   const [endingSession, setEndingSession] = useState(false);
   const handleFinish = async() => {
+    // Prevent the session end action from being triggered more than once
     if(endingSession) return;
     setEndingSession(true);
     const currentSessionId = sessionId;
+    // Move to the dashboard immediately, then attempt to mark the session as ended in the backend.
     navigate('/dashboard');
     if(currentSessionId){
       fetch(`${FLASK_BASE}/sessions/${currentSessionId}/end`, {
@@ -153,6 +199,7 @@ export default function TradingSimulator(){
   };
   return(
     <div className="sim">
+      {/*Top navigation and session status*/}
       <div className="sim_topbar">
         <div className="sim_topbar-left">
           <span className="sim_label">Simulator</span>
@@ -184,7 +231,9 @@ export default function TradingSimulator(){
             </div>
             </div>
             <div className="sim_body">
+              {/*Market data*/}
               <div className="sim_col">
+                <div className="sim_market-scroll">
                 <p className="sim_col-heading">Markets</p>
                 {STOCKS.map(({symbol, name}) => (
                   <button 
@@ -211,6 +260,8 @@ export default function TradingSimulator(){
                   {pricesLoading ? 'Loading live quotes...' : `Live quotes refresh every ${priceUpdateMs/1000}s`}
                 </p>
                 </div>
+                </div>
+                {/*Trade execution panel*/}
                 <div className="sim_trade-col">
                   <div className="sim_selected-header">
                     <div style={{display: 'flex', alignItems: 'baseline'}}>
@@ -281,7 +332,9 @@ export default function TradingSimulator(){
                         )}
                         </div>
                         </div>
-                        <div className="sim_col" style={{padding: 20}}>
+                        {/*Portfolio summary and open positions*/}
+                        <div className="sim_col" >
+                          <div className="sim_portfolio-scroll">
                           <p className="sim_col-heading" style={{padding: 0, marginBottom: 16}}>
                             Portfolio
                           </p>
@@ -319,6 +372,7 @@ export default function TradingSimulator(){
                                 </div>
                             ))
                           )}
+                          </div>
                           </div>
                           </div>
                           </div>

@@ -1,16 +1,15 @@
-/**
- * Affective Trading — router.jsx
- * Defines all application routes using React Router v6.
- *
- * Install dependency (if not already installed):
- *   npm install react-router-dom
- *
- * Route map:
- *   /             → SplashScreen      (cinematic intro)
- *   /disclosure   → DisclosureScreen  (FYI / consent)
- *   /simulator    → SimulatorPage     (trading + emotion panel)
- *   /dashboard    → DashboardPage     (post-session analytics)
- */
+/** 
+*Affective Trading (Final Year Project)
+*Student Name: Dhruvi Soni
+*Student ID: W1912163/3
+*Supervisor: Dr. Alan Immanuel Benjamin Vallavaraj  
+*Module: 6COSC023W Computer Science Final Project
+* Description:
+*  Defines the application routes for the frontend using React Router.
+*  Each route maps a URL path to a specific page component in the prototype,
+*  including the splash screen, disclosure screen, scenario selection,
+*  trading simulator, and dashboard. A catch-all route is included to redirect
+*/
 
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import Splashscreen from './Splashscreen';

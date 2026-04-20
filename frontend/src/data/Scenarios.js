@@ -1,3 +1,4 @@
+//Scenarios for the simulation, each with different risk levels and update intervals
 export const SCENARIOS = [
     {
         id: "high",

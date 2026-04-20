@@ -73,5 +73,8 @@ def main() -> None:
     for j in top3:
         name = label_names[int(j)] if int(j) < len(label_names) else str(int(j))
         print(f" -{name:12s} p={probs[int(j)]:.4f}")
+    print("\n=== Full Test Set Evaluation ===")
+    results = model.evaluate(X_test, y_test, verbose=1, return_dict=True)
+    print(f"Results: {results}")   
 if __name__ == "__main__":
     main()

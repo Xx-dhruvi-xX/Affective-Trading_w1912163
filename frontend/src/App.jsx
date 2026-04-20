@@ -6,7 +6,9 @@
 *Module: 6COSC023W Computer Science Final Project
 * Description:
 *  Main entry page for the React frontend
-*   Renders the key prototype components 
+*  It wraps the application in the SessionProvider so 
+*  session-related data can be accessed across the app, 
+*  and sets up routing using React Router.
 */
 
 import {useEffect, useState} from 'react';
@@ -17,6 +19,7 @@ import router from './Router'; // React Router configuration
 export default function App() {
   return (
     <SessionProvider>
+      {/* Routing for all frontend pages */}
       <RouterProvider router={router} />
     </SessionProvider>
   )

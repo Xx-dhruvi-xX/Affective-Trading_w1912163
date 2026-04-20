@@ -1,3 +1,4 @@
+// This file contains a list of popular stocks with their symbols and names.
 export const STOCKS = [
     {
         symbol: "AAPL",

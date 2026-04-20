@@ -2,20 +2,14 @@
  * Affective Trading (Final Year Project)
  * Student Name: Dhruvi Soni
  * Student ID: W1912163/3
+ * Supervisor: Dr. Alan Immanuel Benjamin Vallavaraj
  * Module: 6COSC023W Computer Science Final Project
  * Description:
  * - Runs on-device emotion inference using face-api.js (no server upload).
  * - Reads facial expression probabilities (happy/sad/angry/etc).
  * - Derives a simple VAD (Valence–Arousal–Dominance) estimate.
  * - Computes a stress score (0–100) from VAD for the prototype demo.
- *
- * Notes:
- * - This is a prototype mapping (heuristic weights). The final version can
- *   replace this with a more advanced lightweight browser-based affective model.
  */
-
-
-
 
 import React from "react";
 import { useEffect, useRef, useState } from "react";
@@ -29,6 +23,10 @@ const EXPRESSION_MODEL_DIR = `${MODEL_BASE_URL}/facial_expression_recognition`;
 // how often prediction is run
 const DETECTION_INTERVAL_MS = 500;
 const BACKEND_LOG_INTERVAL_MS = 3000;
+const MIN_EMOTION_CONFIDENCE = 0.55; 
+const STRESS_SMOOTHING_ALPHA = 0.3; // for smoothing stress score over time
+const NO_FACE_GRACE_MS = 2000;
+const EMOTION_STABILITY_FRAMES = 2;
 function getDominantExpression(expressions) {
     if (!expressions) return { label: "none", confidence: 0};
     let best = { label: "none", confidence: 0};
@@ -107,9 +105,16 @@ function computeStressScore(vad){
     const stress = clamp(0.65 * arousal + 0.35 * negative_Valence, 0, 1);
     return Math.round(stress * 100);
 }
+function smoothStress(previous, current, alpha = STRESS_SMOOTHING_ALPHA){
+    return Math.round(previous * (1 - alpha) + current * alpha);
+}
 export default function EmotionRecognitionPanel({sessionId = null}) {
     // reference to <video> element
     const videoRef = useRef(null);
+    const lastStableStressRef = useRef(0);
+    const lastFaceDetectedAtRef = useRef(0);
+    const lastEmotionLabelRef = useRef("none");
+    const lastEmotionStableCountRef = useRef(0);
     //UI state
     const [isEnabled, setIsEnabled] = useState(false);
     const [status, setStatus] = useState ("Idle (camera off)");
@@ -174,30 +179,45 @@ export default function EmotionRecognitionPanel({sessionId = null}) {
                     
                     //if no face detected reset outputs
                     if(!result || !result.expressions){
-                        setTopEmotion({ label:  "none", confidence: 0 });
-                        setVad({v:0, a:0, d:0});
-                        setStressScore(0);
+                        const now = Date.now();
+                        if (now - lastFaceDetectedAtRef.current > NO_FACE_GRACE_MS){
+                            setTopEmotion({ label: "none", confidence: 0});
+                            setStatus("Face not detected. Waiting...");
+                        }
                         return;
                     }
 
-                    const best = 
-                    getDominantExpression(result.expressions);
+                    const best = getDominantExpression(result.expressions);
+                    if (best.confidence < MIN_EMOTION_CONFIDENCE){
+                        setStatus("Emotion uncertain. Keep a neutral expression or improve lighting.");
+                        return;
+                    }
+                    lastFaceDetectedAtRef.current = Date.now();
+                    if (best.label === lastEmotionLabelRef.current){
+                        lastEmotionStableCountRef.current += 1;
+                    } else {
+                        lastEmotionStableCountRef.current = 1;
+                        lastEmotionLabelRef.current = best.label;
+                    }
+                    if (lastEmotionStableCountRef.current >= EMOTION_STABILITY_FRAMES){
                     setTopEmotion({ label: formatLabel(best.label), confidence: best.confidence});
-                    //VAD + stress score
-                    const vadNow = calculateVAD(result.expressions); setVad(vadNow);
-                    const stressNow = computeStressScore(vadNow);
-                    setStressScore(stressNow);
+                    }
+                    const vadNow = calculateVAD(result.expressions);
+                    setVad(vadNow);
+                    const rawStressNow = computeStressScore(vadNow);
+                    const smoothedStressNow = smoothStress(lastStableStressRef.current, rawStressNow);
+                    lastStableStressRef.current = smoothedStressNow;
+                    setStressScore(smoothedStressNow);
                     const now = Date.now();
-                    console.log("Stress check", {sessionId, now, lastBackendLogAt, stressNow, emotion: best.label})
+                    setStatus("Emotion detected. Inference running...");
                     // POST stress score to backend
                     if (sessionId && now - lastBackendLogAt >= BACKEND_LOG_INTERVAL_MS) {
                         lastBackendLogAt = now;
-                        console.log("posting stress sample")
                         fetch(`http://localhost:5000/sessions/${sessionId}/stress`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                stress_score: stressNow,
+                                stress_score: smoothedStressNow,
                                 emotion_label: best.label,
                             }),
                         }).catch(() => {});
@@ -213,9 +233,14 @@ export default function EmotionRecognitionPanel({sessionId = null}) {
         //cleanup function to stop camera and interval
         function stop() {
             setStatus("Camera off.");
+            setPermissionError("");
             setTopEmotion({ label: "none", confidence: 0});
             setVad({v:0, a:0, d:0});
             setStressScore(0);
+            lastStableStressRef.current = 0;
+            lastFaceDetectedAtRef.current = 0;
+            lastEmotionLabelRef.current = "none";
+            lastEmotionStableCountRef.current = 0;
             if (timeId)
                 window.clearInterval(timeId);
             timeId = null;
@@ -237,7 +262,7 @@ export default function EmotionRecognitionPanel({sessionId = null}) {
             <div className="rounded-2xl border border-[#1a1a30] bg-[#0d0d1c] p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-4 mb-4">
                     <div>
-                        <h2 className="text=xl font-bold text-white mb-1">Emotion Recognition</h2>
+                        <h2 className="text-xl font-bold text-white mb-1">Emotion Recognition</h2>
                         <p className="text-sm text-[#9a9ab5]">Status: <strong className="text-white">{status}</strong></p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -253,7 +278,7 @@ export default function EmotionRecognitionPanel({sessionId = null}) {
                 {permissionError && (
                     <p className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{permissionError}</p>
                 )}
-                <div className="grid gird-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                     <video
                     ref={videoRef}
                     muted

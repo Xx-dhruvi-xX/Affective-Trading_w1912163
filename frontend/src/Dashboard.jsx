@@ -1,16 +1,36 @@
+/** 
+*Affective Trading (Final Year Project)
+*Student Name: Dhruvi Soni
+*Student ID: W1912163/3
+*Supervisor: Dr. Alan Immanuel Benjamin Vallavaraj  
+*Module: 6COSC023W Computer Science Final Project
+* Description: Dashboard page shown after trading session.
+*  It retrieves session summary, stress samples, trade history,
+*  and live market prices from the Flask backend
+*  to generate a comprehensive post-session analysis.
+*/
+
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "./Sessioncontext";
 import {LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid} from "recharts";
 
+// Base URL for the Flask Backend API - used to fetch session and market data.
 const FLASK_BASE = 'http://localhost:5000';
+
+// Format numeric value as GBP currency for portfolio and trade displays.
 function formatCurrency(value){
   return `£${Number(value || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2,})}`;
 }
+
+// Convert ISO timestamp to readable time format for chart labels and tooltips.
 function formatTimeLabel(isoString){
   const date = new Date(isoString);
   return date.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', second: '2-digit',});
 }
+
+// Find the stress sample recorded closest in time to a given trade.
+// This is used to estimate the stress level at the moment of each trade for behavioural insights.
 function findNearestStressSample(trade, stressSamples) {
   if(!trade?.timestamp || !stressSamples?.length) return null;
   const tradeTime = new Date(trade.timestamp).getTime();
@@ -29,16 +49,20 @@ function findNearestStressSample(trade, stressSamples) {
 export default function Dashboard(){
   const navigate = useNavigate();
   const {sessionId, setSessionId} = useSession();
+
+  // Main dashboard state for storing backend responses and loading status.
   const [summary, setSummary] = useState(null);
   const [stressSamples, setStressSamples] = useState([]);
   const [trades, setTrades] = useState([]);
   const [latestPrices, setLatestPrices] = useState({});
   const [loading, setLoading] = useState(true);
   useEffect(() => {
+    // If no active session exists, stop loading and do not request dashboard data.
     if(!sessionId){
       setLoading(false);
       return;
     }
+    // Load the core dashboard data in parallel to minimize wait time.
     async function loadDashboardData() {
       try{
         const [summaryRes, stressRes, tradesRes] = await Promise.all([
@@ -61,12 +85,15 @@ export default function Dashboard(){
     loadDashboardData();
   }, [sessionId]);
   useEffect(() => {
+    // Extract the held stock symbols from the session summary portfolio.
     const holdings = summary?.holdings ?? {};
     const symbols = Object.keys(holdings);
+    // If there are no open positions,  no market quote lookup is required.
     if(!symbols.length){
       setLatestPrices({});
       return;
     }
+    // Request latest prices so holdings can be valued using current market data.
     async function loadLatestPrices() {
       try{
         const res = await fetch(`${FLASK_BASE}/market/quotes?symbols=${symbols.join(",")}`);
@@ -79,21 +106,32 @@ export default function Dashboard(){
     }
     loadLatestPrices();
   }, [summary]);
+  // Exit the dashboard and clear the session to return to the home page for a new session start.
   const handleExit = () => {
     setSessionId(null);
     navigate('/');
   };
+
+  // Derived summary values used across the dashboard cards and insight text
   const avgStress = summary?.average_stress_score;
   const tradeCount = summary?.trade_count ?? 0;
   const scenarioName = summary?.scenario ?? 'Not recorded';
   const riskLevel = summary?.risk_level ?? 'Not recorded';
+  
+  // Categorise stress into user-friendly levels for display.
   const stressLevel = avgStress == null ? 'N/A' : avgStress < 30 ? 'Low' : avgStress < 60 ? 'Moderate' : 'High';
+  
+  // Determine the colour coding for stress levels.
   const stressColor = avgStress == null ? '#42425a' : avgStress < 30 ? '#4ade80' : avgStress < 60 ? '#c4a87a' : '#f87171';
+  
+  // Generate a behavioural insight based on the average stress.
   const insight = 
   avgStress == null ? 'No stress data recorded this session. Enable emotion recognition during the next session.' :
   avgStress < 30 ? 'You traded calmly this session. Low stress is associated with more rational decision-making and reduced susceptibility to panic selling and loss aversion.':
   avgStress < 60 ? 'You experienced moderate stress during this session. Consider pausing before placing trades when stress rises as elevated arousal can increase impulsive decision-making.':
   'High stress was detected during this session. Research shows high emotional arousal significantly increases loss aversion and herding behaviour.';
+  
+  // Convert raw stress samples into chart-friendly points.
   const stressChartData = useMemo( () => {
     return stressSamples.map((sample,index) => ({
       index: index + 1,
@@ -101,6 +139,8 @@ export default function Dashboard(){
       stress: sample.stress_score,
     }));
   }, [stressSamples]);
+
+  // Link each trade to the nearest stress sample to estimate the stress level at the time of the trade.
   const tradesWithStress = useMemo(() => {
     return trades.map((trade) => {
       const nearestStress = findNearestStressSample(trade, stressSamples);
@@ -110,23 +150,38 @@ export default function Dashboard(){
       };
     });
   }, [trades, stressSamples]);
+
+  // Calculate the current value of holdings using the latest market prices.
   const holdings = summary?.holdings ?? {};
   const holdingsValue = Object.entries(holdings).reduce((sum, [symbol, qty]) => {
     const livePrice = latestPrices?.[symbol]?.current ?? 0;
     return sum + Number(qty) * Number(livePrice);
   }, 0);
   const cashBalance = Number(summary?.cash_balance ?? 0);
+  
+  // Final portfolio value combines remaining cash with the live value of held assets.
   const finalPortfolioValue = cashBalance + holdingsValue;
+ 
+ // Separate BUY and SELL trades so stress patterns can be compared by action type.
   const buyTrades = useMemo(() => tradesWithStress.filter((trade) => trade.side === "BUY" && trade.linked_stress_score != null),[tradesWithStress]);
   const sellTrades = useMemo(() => tradesWithStress.filter((trade) => trade.side === "SELL" && trade.linked_stress_score != null),[tradesWithStress]);
+  
+  // Calculate average stress associated with buy decisions.
   const avgBuyStress = useMemo(() => {if(!buyTrades.length) return null; return buyTrades.reduce((sum, trade) => sum + trade.linked_stress_score, 0)/ buyTrades.length;}, [buyTrades]);
+  
+  // Calculate average stress associated with sell decisions.
   const avgSellStress = useMemo(() => {if(!sellTrades.length) return null; return sellTrades.reduce((sum, trade) => sum + trade.linked_stress_score, 0)/ sellTrades.length;}, [sellTrades]);
+  
+  // Identify the trade linked to the highest recorded stress score.
   const highestStressTrade = useMemo(() => {if(!tradesWithStress.length) return null;
     const validTrades = 
     tradesWithStress.filter((trade) => trade.linked_stress_score != null);
     if(!validTrades.length) return null;
     return validTrades.reduce((highest, current) => current.linked_stress_score > highest.linked_stress_score ? current:highest);
   }, [tradesWithStress]);
+    
+    // Build portfolio history points by replaying trades over time.
+    // Live prices are used to estimate the market value of open holdings.
     const portfolioChartData = useMemo(() => {
     const points = [];
     let runningCash = 100000;
@@ -164,6 +219,8 @@ export default function Dashboard(){
   }
   return points;
 }, [trades, latestPrices]);
+
+// Dashboard UI rendering with inline styles for simplicity. Displays session summary, charts, and insights based on the loaded data.
   return(
     <div style={{
       minHeight: '100vh',
@@ -463,8 +520,8 @@ export default function Dashboard(){
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={stressChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1a1a30" />
-                    <XAxis dataKey="time" stroke="#7878a0" tick={{ fontSize: 10 }} />
-                    <YAxis domain={[0, 100]} stroke="#7878a0" tick={{ fontSize: 10 }} />
+                    <XAxis dataKey="time" stroke="#7878a0" tick={{ fontSize: 10 }} label={{ value: 'Time', position: 'insideBottom', offset: -5, fill: '#7878a0', fontSize: 11 }} />
+                    <YAxis domain={[0, 100]} stroke="#7878a0" tick={{ fontSize: 10 }} label={{ value: 'Stress Score', angle: -90, position: 'insideLeft', offset: -5, fill: '#7878a0', fontSize: 11 }} />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: '#111128',
@@ -519,8 +576,8 @@ export default function Dashboard(){
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={portfolioChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1a1a30" />
-                    <XAxis dataKey="time" stroke="#7878a0" tick={{ fontSize: 10 }} />
-                    <YAxis stroke="#7878a0" tick={{ fontSize: 10 }} />
+                    <XAxis dataKey="time" stroke="#7878a0" tick={{ fontSize: 10 }} label={{ value: 'Time', position: 'insideBottom', offset: -5, fill: '#7878a0', fontSize: 11 }} />
+                    <YAxis stroke="#7878a0" tick={{ fontSize: 10 }} label={{ value: 'Portfolio Value(£)', angle: -90, position: 'insideLeft', offset: -5, fill: '#7878a0', fontSize: 11 }} />
                     <Tooltip
                     formatter={(value) => formatCurrency(value)}
                       contentStyle={{

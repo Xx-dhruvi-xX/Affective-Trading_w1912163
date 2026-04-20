@@ -3,7 +3,8 @@
 *Student ID: W1912163/3
 *Supervisor: Dr. Alan Immanuel Benjamin Vallavaraj  
 *Module: 6COSC023W Computer Science Final Project
-*Description:
+*Description: Archived component used for testing facial landmark detection in the browser using MediaPipe Tasks Vision.
+*  Replaced by EmotionRecognitionPanel.jsx
 * - Facial landmark detection using MediaPipe Tasks Vision
 * - Uses webcam stream, detects face landmarks, and draws points onto a canvas overlay
 *

@@ -1,37 +1,56 @@
+/** 
+*Affective Trading (Final Year Project)
+*Student Name: Dhruvi Soni
+*Student ID: W1912163/3
+*Supervisor: Dr. Alan Immanuel Benjamin Vallavaraj  
+*Module: 6COSC023W Computer Science Final Project
+* Description:
+*  Scenario selection screen for the trading simulation.
+*  It displays a set of predefined market scenarios with 
+*  varying levels of volatility and update frequencies.
+*  When a user selects a scenario, it initiates a new session
+*  on the Flask backend with the chosen settings, and the user 
+*  is navigated to the simulator page. 
+*/
+
 import {useNavigate} from 'react-router-dom';
 import { useSession } from './Sessioncontext';
 import {SCENARIOS} from './data/Scenarios';
 
+// Base URL for the Flask backend API
 const FLASK_BASE = 'http://localhost:5000';
 
 export default function ScenarioSelection() {
     const navigate = useNavigate();
     const {setSelectedScenario, setSessionId} = useSession();
-    const handleSelect = async(scenario) => {
-        try{
-            const response = await fetch(`${FLASK_BASE}/sessions`,{
+
+    // Start a new backend session using the selected scenario settings,
+    // then store the chosen scenario in context and open the simulator.
+    const handleSelect = async (scenario) => {
+        setSelectedScenario(scenario);
+        try {
+            const res = await fetch(`${FLASK_BASE}/sessions`, {
                 method: 'POST',
-                headers: {'Content-Type':'application/json'},
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({
                     scenario: scenario.name,
                     risk_level: scenario.riskLevel,
-                    update_interval_ms: scenario.updateIntervalMs,
-                    description: scenario.description,
-                }),
+                })
             });
-            if (!response.ok){
-                alert('Failed to start session. Please try again.');
-                return;
-            }
-            const data = await response.json();
+            if (res.ok) {
+                const data = await res.json();
+                setSessionId(data.session_id);
 
-            setSelectedScenario(scenario);
-            setSessionId(data.session_id);
-            navigate('/simulator')
-        } catch(error){
-            console.error('Error starting scenario session:', error);
-            alert('An error occurred while starting the scenario.');
+            }
+            else {
+                console.error("Failed to start session")
+            }
+        } catch(err){
+            console.error("Error starting session:", err);
         }
+        navigate('/simulator');
     };
     return(
         <div style={{
@@ -70,6 +89,7 @@ export default function ScenarioSelection() {
                 <p style={{ color: '#7878a0', maxWidth: 720, lineHeight: 1.8, marginBottom: 42, fontSize: 14,}}>
                     Select a scenario to control the level of market pressure during the simulation.
                 </p>
+                {/* Render one selectable card for each predefined scenario */}
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
