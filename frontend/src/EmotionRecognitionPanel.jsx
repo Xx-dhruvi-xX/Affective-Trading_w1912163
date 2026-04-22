@@ -15,6 +15,9 @@ import React from "react";
 import { useEffect, useRef, useState } from "react";
 import * as faceapi from "face-api.js" // Library for emotion recognition
 
+// Base URL for backend API (if needed for logging stress scores)
+const FLASK_BASE = import.meta.env.VITE_API_BASE_URL ||'http://localhost:5000';
+
 //Face-api model URL links for the emotion recognition
 const MODEL_BASE_URL = "/models";
 const FACE_DETECTION_DIR = `${MODEL_BASE_URL}/face_detection`;
@@ -213,7 +216,7 @@ export default function EmotionRecognitionPanel({sessionId = null}) {
                     // POST stress score to backend
                     if (sessionId && now - lastBackendLogAt >= BACKEND_LOG_INTERVAL_MS) {
                         lastBackendLogAt = now;
-                        fetch(`http://localhost:5000/sessions/${sessionId}/stress`, {
+                        fetch(`${FLASK_BASE}/sessions/${sessionId}/stress`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({

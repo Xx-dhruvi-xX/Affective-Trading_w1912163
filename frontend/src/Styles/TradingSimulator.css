@@ -1,3 +1,4 @@
+/*overall simulator layout*/
 .sim{
   display: flex;
   flex-direction: column;
@@ -6,6 +7,7 @@
   font-family: 'Space Mono', monospace;
   animation: fadeIn 0.5s ease;
 }
+/*topbar styling and session summary styling*/
 .sim_topbar{
   display: flex;
   justify-content: space-between;
@@ -71,6 +73,7 @@
 .sim_pnl--loss{
   color: #f87171;
 }
+/*end session controls*/
 .sim_end-btn{
   padding: 7px 18px;
   background: transparent;
@@ -91,6 +94,7 @@
   border-color: rgba(124, 92, 252, 0.85);
   color: #f4f4f8;
 }
+/*main body layout*/
 .sim_body{
   display: grid;
   grid-template-columns: 210px 1fr 260px;
@@ -111,6 +115,7 @@
   color: #42425a;
   text-transform: uppercase;
 }
+/*market quotes list styling*/
 .sim_market-scroll{
   height: 100%;
   overflow-y: auto;
@@ -193,6 +198,7 @@
   letter-spacing: 0.25em;
   text-transform: uppercase;
 }
+/*central trading column styling*/
 .sim_trade-col{
   overflow: hidden;
   padding: 24px;
@@ -249,6 +255,7 @@
   border-color: rgba(124, 92, 252, 0.85);
   color: #f4f4f8;
 }
+/* buy/sell buttons and input fields*/
 .sim_side-btn{
   flex: 1;
   padding: 10px 0;
@@ -346,6 +353,7 @@
   border-color: #f87171;
   color: #f87171;
 }
+/*inline messages*/
 .sim_msg{
   margin-top: 12px;
   padding: 10px 14px;
@@ -364,6 +372,7 @@
   border-color: rgba(248, 113, 113, 0.45);
   color: #f87171;
 }
+/*trade history styling*/
 .sim_history{
   margin-top: 32px;
   min-height: 0;
@@ -415,6 +424,7 @@
   color: #42425a;
   margin-left: auto;
 }
+/*portfolio summary and holdings styling*/
 .sim_port-stat{
   background: #0d0d1c;
   border: 1px solid #1a1a30;

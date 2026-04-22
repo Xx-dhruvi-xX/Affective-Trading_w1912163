@@ -18,7 +18,8 @@ import {STOCKS} from "./data/Stocks";
 import "./Styles/TradingSimulator.css";
 
 // Base URL for Flask backend API
-const FLASK_BASE = "http://localhost:5000";
+const FLASK_BASE = import.meta.env.VITE_API_BASE_URL ||'http://localhost:5000';
+
 
 // Starting cash for the trading simulator
 const STARTING_CASH = 100000;

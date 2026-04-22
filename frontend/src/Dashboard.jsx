@@ -16,7 +16,7 @@ import { useSession } from "./Sessioncontext";
 import {LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid} from "recharts";
 
 // Base URL for the Flask Backend API - used to fetch session and market data.
-const FLASK_BASE = 'http://localhost:5000';
+const FLASK_BASE = import.meta.env.VITE_API_BASE_URL ||'http://localhost:5000';
 
 // Format numeric value as GBP currency for portfolio and trade displays.
 function formatCurrency(value){

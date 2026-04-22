@@ -156,4 +156,4 @@ Core functionality has been implemented including:
 - privacy-focused data handling
 - Dashboard-based analysis
 
-Future work may include deeper integration of the custoM CNN model and enhance behavioural analytics.
+Future work may include deeper integration of the custom CNN model and enhance behavioural analytics.

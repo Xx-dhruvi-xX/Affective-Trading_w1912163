@@ -18,7 +18,8 @@ import { useSession } from './Sessioncontext';
 import {SCENARIOS} from './data/Scenarios';
 
 // Base URL for the Flask backend API
-const FLASK_BASE = 'http://localhost:5000';
+const FLASK_BASE = import.meta.env.VITE_API_BASE_URL ||'http://localhost:5000';
+
 
 export default function ScenarioSelection() {
     const navigate = useNavigate();

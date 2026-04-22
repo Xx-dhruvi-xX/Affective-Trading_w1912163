@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Space+Mono:wght@400;700&display=swap');
+
+/*Theme Variables*/
 :root{
   --c-black: #000000;
   --c-bg: #07070e;
@@ -22,11 +24,13 @@
   --r-md: 10px;
   --r-lg: 14px;
 }
+/*Global reset*/
 *,*::before,*::after{
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
+/*Base document styling*/
 html,body, #root{
   height: 100%;
   background: var(--c-bg);
@@ -37,6 +41,7 @@ html,body, #root{
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+/*Scrollbar styling*/
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -48,6 +53,7 @@ html,body, #root{
   background: var(--c-border);
   border-radius: 4px;
 }
+/*Shared control styling*/
 button{
   font-family: var(--f-mono);
   cursor: pointer;
@@ -55,6 +61,7 @@ button{
 input,select{
   font-family: var(--f-mono);
 }
+/*Animations*/
 @keyframes fadeIn{
   from { opacity: 0; }
   to { opacity: 1; }
